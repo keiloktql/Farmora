@@ -284,3 +284,38 @@ button { cursor: pointer; }
   .company-rating-summary { flex-wrap: wrap; }
   .company-rating-summary > button { margin-left: 0; }
 }
+
+@layer base {
+  .maplibregl-popup-content {
+    @apply bg-transparent! shadow-none! p-0! rounded-none!;
+  }
+  .maplibregl-popup-tip {
+    @apply hidden!;
+  }
+  .maplibregl-ctrl-attrib {
+    @apply bg-background! text-muted-foreground! border-border! rounded-md! border! shadow-sm!;
+  }
+  .maplibregl-ctrl-attrib a {
+    @apply text-muted-foreground!;
+  }
+  .maplibregl-ctrl-attrib a:hover {
+    @apply text-foreground!;
+  }
+  .maplibregl-ctrl-attrib-button {
+    @apply bg-transparent! dark:invert;
+  }
+}
+.mapcn-route-map { position: relative; overflow: hidden; }
+.shipment-map-canvas { position: absolute !important; inset: 0; }
+.mapcn-point { display: grid; place-items: center; width: 31px; height: 31px; border: 3px solid white; border-radius: 50%; background: #3f7953; color: white; box-shadow: 0 3px 10px #24483355; font: 700 9px/1 var(--font-geist-sans),sans-serif; }
+.mapcn-destination { background: #547c98; }
+.mapcn-current { display: grid; place-items: center; width: 30px; height: 30px; border: 3px solid white; border-radius: 50%; background: #d89a48; color: white; box-shadow: 0 3px 10px #24483355; }
+.mapcn-port { display: grid; place-items: center; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; background: #769658; color: white; box-shadow: 0 2px 6px #24483355; font: 700 8px/1 var(--font-geist-sans),sans-serif; }
+.mapcn-status { position: absolute; z-index: 10; top: 12px; right: 12px; display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid #ffffffc7; border-radius: 8px; background: #ffffffed; color: #506957; box-shadow: 0 3px 10px #34523c18; font-size: 9px; font-weight: 700; }
+.mapcn-status .signal-dot { width: 7px; height: 7px; border-radius: 50%; background: #5aa36a; }
+.mapcn-status small { margin-left: 5px; color: #909a91; font-size: 8px; font-weight: 400; }
+.mapcn-route-map .maplibregl-ctrl-attrib { font-size: 8px; }
+@media (max-width: 650px) {
+  .mapcn-status { top: 8px; right: 8px; padding: 6px 7px; font-size: 8px; }
+  .mapcn-status small { display: none; }
+}

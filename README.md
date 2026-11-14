@@ -8,7 +8,9 @@ A concept prototype for a shared produce-trade network connecting farmers, FPOs,
 - Produce listings and buyer sourcing requests
 - Organisation profiles with trade ratings and reviews
 - Sample weather and harvest outlooks
-- Shipment tracking with an India–Singapore route map
+- Shipment tracking with an interactive MapCN / MapLibre India–Singapore route map
+
+The main sections have direct URLs: `/marketplace`, `/network`, `/forecasts`, and `/shipments`. The root URL `/` opens the marketplace.
 
 The app uses sample data. Account setup, listings, reviews, forecasts, and shipment tracking are front-end prototype interactions; they are not connected to a live backend or carrier feed.
 
