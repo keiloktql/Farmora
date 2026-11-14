@@ -529,3 +529,69 @@ button { cursor: pointer; }
   .tracking-map-footer { align-items: start; flex-direction: column; }
   .mapcn-legends { right: 8px; left: 8px; gap: 6px; }
 }
+
+/* Keep shipment operations inside the same light workspace as the other pages. */
+.tracking-console {
+  background: #fff;
+  border-color: #e2e8df;
+  color: #263f31;
+  box-shadow: 0 5px 18px #1d3e2d0a;
+}
+.tracking-list-panel {
+  background: #fff;
+  border-color: #e7ece5;
+}
+.tracking-list-heading .eyebrow,
+.tracking-map-header .eyebrow { color: #7b8d7f; }
+.tracking-list-heading h2,
+.tracking-map-header h2 { color: #293f32; }
+.tracking-list-heading p,
+.tracking-map-header p { color: #7d8b80; }
+.tracking-count { background: #f4f7f1; border-color: #e0e8de; color: #607365; }
+.tracking-search { background: #fbfcfa; border-color: #e1e8df; color: #809084; }
+.tracking-search input { color: #3d5143; }
+.tracking-search input::placeholder { color: #9aa69c; }
+.tracking-filters select,
+.tracking-filters > span { background: #fbfcfa; border-color: #e1e8df; color: #697a6e; }
+.tracking-shipment { background: #fff; border-color: #e4e9e2; color: #35493a; }
+.tracking-shipment:hover,
+.tracking-shipment.selected { background: #f6f9f4; border-color: #83a98a; }
+.tracking-shipment-top { color: #879389; }
+.tracking-shipment-top b { color: #5e7263; }
+.tracking-status-dot { background: #aab7ac; }
+.status-moving { background: #4e9a68; box-shadow: 0 0 0 3px #4e9a681c; }
+.status-packing { background: #d5a252; }
+.status-review { background: #8b9b90; }
+.tracking-shipment-row strong { color: #304638; }
+.tracking-shipment-row small { color: #849187; }
+.tracking-eta strong { color: #526a59; }
+.tracking-route-pair { border-color: #edf0eb; color: #5d7062; }
+.tracking-route-pair > span > small { color: #94a096; }
+.tracking-route-pair > svg { color: #93a196; }
+.tracking-step { color: #9aa59c; }
+.tracking-step > i { border-color: #dfe6dd; background: #f5f7f3; color: #859286; }
+.tracking-step > small { font-size: 6px; }
+.tracking-step.done > i { border-color: #b8d1ba; background: #e9f2e6; color: #47754e; }
+.tracking-step.current > small { color: #3f7950; }
+.tracking-list-footer { color: #879389; }
+.tracking-list-footer button { color: #54775d; }
+.tracking-map-panel { background: #fff; }
+.tracking-map-header { border-color: #e7ece5; }
+.tracking-map-header-status { background: #eff6ed; border-color: #dce9da; color: #467850; }
+.tracking-map-canvas { background: #eef2ed; }
+.tracking-map .maplibregl-ctrl-attrib { background: #fffE !important; color: #68766b !important; font-size: 7px !important; }
+.tracking-map .maplibregl-ctrl-attrib a { color: #54705a !important; }
+.mapcn-legends { border-color: #e0e7df; background: #fffffff2; color: #617164; box-shadow: 0 2px 9px #213a2b0d; }
+.mapcn-legends i { background: #28764f; }
+.mapcn-legends .legend-planned { background: #a7b8a9; }
+.mapcn-location-card { background: #fffffff2; border-color: #e0e7df; box-shadow: 0 3px 12px #1e3f2c14; }
+.mapcn-location-icon { background: #edf4e9; color: #3c7950; }
+.mapcn-location-card small { color: #849087; }
+.mapcn-location-card b { color: #314638; }
+.mapcn-location-card em { color: #89958b; }
+.tracking-map-footer { border-color: #e7ece5; color: #7e8b81; }
+.tracking-map-footer b { color: #405747; }
+
+@media (max-width: 760px) {
+  .tracking-list-panel { border-bottom-color: #e7ece5; }
+}
