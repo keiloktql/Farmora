@@ -7,7 +7,6 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  Bell,
   Bookmark,
   Building2,
   CalendarDays,
@@ -21,6 +20,7 @@ import {
   Eye,
   Filter,
   Globe2,
+  Heart,
   Leaf,
   MapPin,
   Menu,
@@ -78,10 +78,10 @@ const producerProfiles = [
   { name: "Erode Agro Producer Co.", type: "Farmer Producer Company", region: "Erode, Tamil Nadu", members: "512 farmer members", crops: "Turmeric · Coconut · Banana", reliability: "Member since 2022", verified: false, initials: "EA", color: "gold", rating: "4.5", reviews: 12 },
 ];
 
-const roleDetails: Record<AccountRole, { label: string; subtitle: string; initials: string; name: string; home: string; cta: string }> = {
-  farmer: { label: "Farmer", subtitle: "Individual grower", initials: "RS", name: "Ravi Singh", home: "Your harvest, connected", cta: "List your harvest" },
-  fpo: { label: "FPO", subtitle: "Producer organisation", initials: "KF", name: "Anita Sharma", home: "Good morning, Anita", cta: "Post a supply lot" },
-  buyer: { label: "Buyer", subtitle: "Retailer or importer", initials: "LC", name: "Lena Chen", home: "Find your next supply", cta: "Post a buyer request" },
+const roleDetails: Record<AccountRole, { label: string; subtitle: string; initials: string; name: string; home: string; description: string; cta: string }> = {
+  farmer: { label: "Farmer", subtitle: "Individual grower", initials: "RS", name: "Ravi Singh", home: "Your harvest, connected", description: "Share your harvest window, compare buyer demand, and follow each order from pickup to payment.", cta: "List your harvest" },
+  fpo: { label: "FPO", subtitle: "Producer organisation", initials: "KF", name: "Anita Sharma", home: "Good morning, Anita", description: "Bring member harvests together, plan reliable volumes, and fulfil buyer orders as one group.", cta: "Post a supply lot" },
+  buyer: { label: "Buyer", subtitle: "Retailer or importer", initials: "LC", name: "Lena Chen", home: "Source with confidence", description: "Compare available produce, share a sourcing request, and track incoming orders in one place.", cta: "Post a buyer request" },
 };
 
 const shipments = [
@@ -214,18 +214,18 @@ export default function Home({ initialView = "marketplace" }: { initialView?: Vi
       <main className="main-area">
         <header className="topbar">
           <div className="breadcrumb"><span>India</span><ChevronRight size={13} /><span className="breadcrumb-current">{view === "marketplace" ? "Exchange" : heading.eyebrow.toLowerCase()}</span></div>
-          <div className="topbar-actions"><div className="network-live"><span />Network live</div><button className="icon-button" aria-label="Notifications"><Bell size={17} /><i /></button><div className="topbar-avatar">AS</div></div>
+          <div className="topbar-actions"><div className="network-live"><span />Network live</div><div className="topbar-avatar">{roleInfo.initials}</div></div>
         </header>
 
         <div className="content-wrap">
           <div className="page-heading-row">
-          <div><div className="eyebrow">{currentHeading.eyebrow}</div><h1>{currentHeading.title}</h1><p>{role === "buyer" && view === "marketplace" ? "Compare trusted producer groups, respond to supply, and build reliable sourcing relationships." : currentHeading.description}</p></div>
+          <div><div className="eyebrow">{currentHeading.eyebrow}</div><h1>{currentHeading.title}</h1><p>{view === "marketplace" ? roleInfo.description : currentHeading.description}</p></div>
             <div className="page-actions"><button className="button-quiet" onClick={() => setView("shipments")}><Truck size={16} /> Track shipment</button><Button className="primary-button" onClick={() => { setShowLotForm(true); setLotAdded(false); }}><Plus size={16} /> {roleInfo.cta}</Button></div>
           </div>
 
           {lotAdded && <div className="success-banner"><CheckCircle2 size={17} /><span>{role === "buyer" ? "Your sourcing request has been shared with the network." : "Your supply lot is live in the exchange."}</span><button onClick={() => setLotAdded(false)} aria-label="Dismiss"><X size={15} /></button></div>}
 
-          {view === "marketplace" && <MarketplaceView lots={filteredLots} query={query} setQuery={setQuery} category={category} setCategory={setCategory} setView={setView} setCompany={setCompany} savedLots={savedLots} toggleSaved={toggleSaved} />}
+          {view === "marketplace" && <MarketplaceView role={role} lots={filteredLots} query={query} setQuery={setQuery} category={category} setCategory={setCategory} setView={setView} setCompany={setCompany} savedLots={savedLots} toggleSaved={toggleSaved} onOpenLotForm={() => { setShowLotForm(true); setLotAdded(false); }} />}
           {view === "network" && <NetworkView setCompany={setCompany} />}
           {view === "forecasts" && <ForecastView />}
           {view === "shipments" && <ShipmentView selectedShipment={selectedShipment} setSelectedShipment={setSelectedShipment} />}
@@ -245,53 +245,69 @@ function NavButton({ active = false, icon, label, count, onClick }: { active?: b
   return <button onClick={onClick} className={`nav-item ${active ? "nav-item-active" : ""}`}>{icon}<span>{label}</span>{count && <em>{count}</em>}</button>;
 }
 
-function MarketplaceView({ lots, query, setQuery, category, setCategory, setView, setCompany, savedLots, toggleSaved }: {
-  lots: SupplyLot[]; query: string; setQuery: (value: string) => void; category: string; setCategory: (value: string) => void; setView: (value: View) => void; setCompany: (value: (typeof producerProfiles)[number]) => void; savedLots: string[]; toggleSaved: (id: string) => void;
+function MarketplaceView({ role, lots, query, setQuery, category, setCategory, setView, setCompany, savedLots, toggleSaved, onOpenLotForm }: {
+  role: AccountRole; lots: SupplyLot[]; query: string; setQuery: (value: string) => void; category: string; setCategory: (value: string) => void; setView: (value: View) => void; setCompany: (value: (typeof producerProfiles)[number]) => void; savedLots: string[]; toggleSaved: (id: string) => void; onOpenLotForm: () => void;
 }) {
   const [tab, setTab] = useState("Supply lots");
+  const [activeStep, setActiveStep] = useState(0);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [readyOnly, setReadyOnly] = useState(false);
+  const [maxPrice, setMaxPrice] = useState(180);
   const categories = ["All produce", "Mango", "Grapes", "Turmeric", "Green chilli"];
-  return <>
-    <section className="stats-row">
-      <Stat icon={<PackageSearch size={18} />} label="Live supply lots" value="128" sub="Across 9 crop categories" color="green" />
-      <Stat icon={<Building2 size={18} />} label="Buyer requests" value="24" sub="6 match your crop profile" color="blue" />
-      <Stat icon={<Truck size={18} />} label="Shipments moving" value="08" sub="3 arriving this week" color="amber" />
-      <Stat icon={<ShieldCheck size={18} />} label="Verified partners" value="76" sub="Profiles with checked records" color="plum" />
+  const flows: Record<AccountRole, { title: string; steps: { label: string; hint: string }[] }> = {
+    farmer: { title: "Farmer selling flow", steps: [{ label: "List a harvest", hint: "Add crop, quantity and date" }, { label: "Review buyer demand", hint: "Match with open requests" }, { label: "Follow delivery", hint: "Track pickup to destination" }] },
+    fpo: { title: "FPO fulfilment flow", steps: [{ label: "Check member outlook", hint: "Review field and weather updates" }, { label: "Combine a supply lot", hint: "Publish pooled availability" }, { label: "Manage shipment", hint: "Follow export milestones" }] },
+    buyer: { title: "Buyer sourcing flow", steps: [{ label: "Set buying requirements", hint: "Share crop and volume needed" }, { label: "Compare suppliers", hint: "Review supply and partner records" }, { label: "Track an order", hint: "Follow arrival to Singapore" }] },
+  };
+  const flow = flows[role];
+  const visibleLots = lots.filter((lot) => {
+    const price = Number(lot.price.match(/[0-9]+/)?.[0] ?? 0);
+    return (!verifiedOnly || lot.verified) && (!readyOnly || lot.harvest.toLowerCase().includes("now")) && (price === 0 || price <= maxPrice);
+  });
+  function runStep(index: number) {
+    setActiveStep(index);
+    if (role === "farmer") {
+      if (index === 0) onOpenLotForm();
+      if (index === 1) setTab("Buyer requests");
+      if (index === 2) setView("shipments");
+    } else if (role === "fpo") {
+      if (index === 0) setView("forecasts");
+      if (index === 1) onOpenLotForm();
+      if (index === 2) setView("shipments");
+    } else {
+      if (index === 0) onOpenLotForm();
+      if (index === 1) { setTab("Supply lots"); document.getElementById("supply-listing")?.scrollIntoView({ behavior: "smooth" }); }
+      if (index === 2) setView("shipments");
+    }
+  }
+  return <div className="marketplace-page">
+    <section className="role-demo-flow" aria-label={`${roleInfoFor(role).label} demo flow`}>
+      <div className="role-flow-heading"><div><span className="eyebrow">DEMO FLOW · {roleInfoFor(role).label.toUpperCase()}</span><h2>{flow.title}</h2></div><span className="flow-account"><span className="flow-account-dot" /> {roleInfoFor(role).subtitle}</span></div>
+      <div className="role-flow-steps">{flow.steps.map((step, index) => <button key={step.label} className={`role-flow-step ${activeStep === index ? "active" : ""}`} onClick={() => runStep(index)}><span className="flow-step-number">{index + 1}</span><span className="flow-step-copy"><b>{step.label}</b><small>{step.hint}</small></span><ArrowRight size={15} /></button>)}</div>
     </section>
 
-    <div className="market-layout" id="supply-section">
-      <section className="market-main">
-        <div className="market-tabs"><div className="tab-row"><button onClick={() => setTab("Supply lots")} className={tab === "Supply lots" ? "market-tab active" : "market-tab"}>Supply lots <span>128</span></button><button onClick={() => setTab("Buyer requests")} className={tab === "Buyer requests" ? "market-tab active" : "market-tab"}>Buyer requests <span>24</span></button></div><button className="filter-button"><SlidersHorizontal size={15} /> Filters</button></div>
-        {tab === "Supply lots" ? <>
-          <div className="market-tools"><div className="search-field"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search crops, varieties, or producer groups" /></div><div className="category-scroll">{categories.map((item) => <button key={item} className={`category-chip ${category === item ? "selected" : ""}`} onClick={() => setCategory(item)}>{item}</button>)}</div></div>
-          <SectionHeading title="Available supply" detail="Fresh lots from producer groups across India" action={<button className="text-action" onClick={() => setView("network")}>View all lots <ArrowRight size={14} /></button>} />
-          <div className="lots-grid">{lots.map((lot) => <LotCard key={lot.id} lot={lot} onProducer={() => setView("network")} saved={savedLots.includes(lot.id)} onSave={() => toggleSaved(lot.id)} />)}{lots.length === 0 && <div className="empty-state"><PackageSearch size={24} /><strong>No matching lots</strong><span>Try another crop or producer name.</span></div>}</div>
-        </> : <BuyerRequests />}
-      </section>
+    <div className="shop-category-row" aria-label="Produce categories">{categories.map((item) => <button key={item} className={`shop-category ${category === item ? "selected" : ""}`} onClick={() => setCategory(item)}>{item === "All produce" ? <PackageSearch size={15} /> : <span className={`category-dot category-${item.toLowerCase().replaceAll(" ", "-")}`} />}{item}</button>)}</div>
 
-      <aside className="market-aside">
-        <Card className="weather-card">
-          <div className="card-title-row"><div><div className="eyebrow">SOURCING REGION WATCH</div><h3>Weather & harvest</h3></div><div className="weather-icon"><CloudRain size={18} /></div></div>
-          <div className="weather-location"><MapPin size={14} /> Chittoor district, Andhra Pradesh <ChevronDown size={14} /></div>
-          <div className="weather-main"><div><strong>31°</strong><span>Partly cloudy</span></div><span className="weather-glyph">⛅</span></div>
-          <div className="weather-days"><WeatherDay day="Today" icon="☀" temp="31°" /><WeatherDay day="Fri" icon="☁" temp="29°" /><WeatherDay day="Sat" icon="🌧" temp="26°" /><WeatherDay day="Sun" icon="🌦" temp="27°" /></div>
-          <div className="weather-impact"><div className="impact-icon"><Sparkles size={15} /></div><div><b>Harvest outlook: steady</b><span>Light rain may delay picking by 1–2 days for some farms.</span></div></div>
-          <button className="card-link" onClick={() => setView("forecasts")}>Open regional outlook <ArrowRight size={14} /></button>
-        </Card>
-
-        <Card className="buyer-card">
-          <div className="buyer-head"><div><div className="eyebrow">BUYER LOOKING FOR</div><h3>Fresh mangoes</h3></div><div className="buyer-logo">LC</div></div>
-          <div className="buyer-org"><span className="buyer-dot" /> LionCity Fresh Imports <Badge className="verified-mini"><Check size={11} /> Buyer</Badge></div>
-          <div className="buyer-specs"><div><span>Volume</span><b>2–5 tonnes</b></div><div><span>Delivery</span><b>Singapore · Dec</b></div><div><span>Required</span><b>Export grade</b></div></div>
-          <button className="outline-full" onClick={() => setTab("Buyer requests")}>See buyer request <ArrowRight size={14} /></button>
-        </Card>
-
-        <div className="shipment-mini" onClick={() => setView("shipments")} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && setView("shipments")}>
-          <div className="shipment-mini-top"><div className="shipment-mini-icon"><Truck size={16} /></div><span>SHIPMENT TRACKING</span><ArrowUpRight size={15} /></div>
-          <strong>SH-2026-184 <span>In transit</span></strong><small>Banganapalle mangoes · ETA 28 Nov</small><div className="shipment-progress"><i /><i /><i className="current" /><i /></div>
-        </div>
+    <div className="shop-layout" id="supply-section">
+      <aside className="shop-filter-panel">
+        <div className="shop-filter-heading"><h2>Filter supply</h2><button onClick={() => { setVerifiedOnly(false); setReadyOnly(false); setMaxPrice(180); setCategory("All produce"); }}>Reset</button></div>
+        <div className="shop-filter-block"><h3>Price per kg</h3><div className="price-range-labels"><span>₹0</span><b>Up to ₹{maxPrice}</b><span>₹180+</span></div><input className="price-slider" aria-label="Maximum price per kilogram" type="range" min="20" max="180" step="4" value={maxPrice} onChange={(event) => setMaxPrice(Number(event.target.value))} /></div>
+        <div className="shop-filter-block"><h3>Availability</h3><label className="filter-check"><input type="checkbox" checked={readyOnly} onChange={(event) => setReadyOnly(event.target.checked)} /> Ready to dispatch <span>Now</span></label><label className="filter-check"><input type="checkbox" checked={verifiedOnly} onChange={(event) => setVerifiedOnly(event.target.checked)} /> Traceable / checked <span>{lots.filter((lot) => lot.verified).length}</span></label></div>
+        <div className="shop-filter-block"><h3>Supply region</h3><button className="region-filter" onClick={() => setQuery(query.includes("Andhra") ? "" : "Andhra") }><MapPin size={14} /> Andhra Pradesh <span>⌄</span></button><button className="region-filter" onClick={() => setQuery(query.includes("Maharashtra") ? "" : "Maharashtra")}><MapPin size={14} /> Maharashtra <span>⌄</span></button></div>
+        <div className="weather-filter-note"><CloudRain size={15} /><span><b>Harvest outlook</b><small>Chittoor supply is on track this week.</small><button onClick={() => setView("forecasts")}>View weather notes <ArrowRight size={12} /></button></span></div>
       </aside>
+
+      <section className="shop-results" id="supply-listing">
+        <div className="shop-search-row"><div className="search-field"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search produce, variety, or supplier" /></div><button className="sort-select" onClick={() => setCategory("All produce")}><SlidersHorizontal size={15} /> Sort: recently listed <ChevronDown size={14} /></button></div>
+        <div className="shop-results-heading"><div className="tab-row"><button onClick={() => setTab("Supply lots")} className={tab === "Supply lots" ? "market-tab active" : "market-tab"}>Available supply <span>{visibleLots.length}</span></button><button onClick={() => setTab("Buyer requests")} className={tab === "Buyer requests" ? "market-tab active" : "market-tab"}>Buyer requests <span>24</span></button></div><span className="results-note">Sample listings · India</span></div>
+        {tab === "Supply lots" ? <div className="lots-grid shop-products">{visibleLots.map((lot) => <LotCard key={lot.id} lot={lot} onProducer={() => { const profile = producerProfiles.find((item) => lot.producer.includes(item.name.split(" ")[0])); if (profile) setCompany(profile); else setView("network"); }} saved={savedLots.includes(lot.id)} onSave={() => toggleSaved(lot.id)} />)}{visibleLots.length === 0 && <div className="empty-state"><PackageSearch size={24} /><strong>No matching supply</strong><span>Adjust the crop, price, or availability filters.</span></div>}</div> : <BuyerRequests />}
+      </section>
     </div>
-  </>;
+  </div>;
+}
+
+function roleInfoFor(role: AccountRole) {
+  return roleDetails[role];
 }
 
 function Stat({ icon, label, value, sub, color }: { icon: ReactNode; label: string; value: string; sub: string; color: string }) {
@@ -299,7 +315,15 @@ function Stat({ icon, label, value, sub, color }: { icon: ReactNode; label: stri
 }
 
 function LotCard({ lot, onProducer, saved, onSave }: { lot: SupplyLot; onProducer: () => void; saved: boolean; onSave: () => void }) {
-  return <Card className="lot-card"><div className={`lot-image lot-${lot.tone}`}><span className="lot-produce-emoji">{lot.icon}</span><div className="lot-image-top"><Badge className={lot.verified ? "lot-verified" : "lot-pending"}>{lot.verified ? <><CheckCircle2 size={12} /> Traceable lot</> : <><Eye size={12} /> Check in progress</>}</Badge><button className={`save-button ${saved ? "saved" : ""}`} onClick={onSave} aria-label={saved ? "Remove saved lot" : "Save lot"}><Bookmark size={15} fill={saved ? "currentColor" : "none"} /></button></div><span className="lot-id">{lot.id}</span></div><div className="lot-card-body"><div className="lot-title-row"><div><h3>{lot.variety}</h3><span>{lot.crop}</span></div><strong className="lot-price">{lot.price}</strong></div><button className="producer-link" onClick={onProducer}><span className="producer-mini-avatar">{lot.producer.split(" ").map((word) => word[0]).slice(0, 2).join("")}</span><span>{lot.producer}</span><ExternalLink size={12} /></button><div className="lot-meta"><span><MapPin size={13} />{lot.location.split(",")[0]}</span><span><Warehouse size={13} />{lot.quantity}</span></div><Separator className="lot-divider" /><div className="lot-footer"><StatusPill tone={lot.verified ? "green" : "amber"}>{lot.grade}</StatusPill><span className="harvest-label"><CalendarDays size={13} />{lot.harvest}</span></div><button className="request-button" onClick={onProducer}>View lot details <ArrowRight size={14} /></button></div></Card>;
+  const photo = lot.tone === "mango"
+    ? "https://www.icipe.org/sites/default/files/styles/node_gallery_display/public/node_gallery/mangos.jpg?itok=jrFisShD"
+    : lot.tone === "grape"
+      ? "https://images.unsplash.com/photo-1537640538966-79f369143f8f?auto=format&fit=crop&w=900&q=82"
+      : lot.tone === "turmeric"
+        ? "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=900&q=82"
+        : "https://images.unsplash.com/photo-1565685110871-1324fc462c84?auto=format&fit=crop&w=900&q=82";
+  const profile = producerProfiles.find((item) => lot.producer.includes(item.name.split(" ")[0]));
+  return <Card className="lot-card shop-product-card"><div className={`lot-image product-photo lot-${lot.tone}`} role="img" aria-label={`${lot.crop} produce photo`} style={{ backgroundImage: `linear-gradient(180deg, #15251b18 0%, transparent 45%, #15251b08 100%), url("${photo}")` }}><div className="lot-image-top"><Badge className={lot.verified ? "lot-verified" : "lot-pending"}>{lot.verified ? <><CheckCircle2 size={12} /> Verified lot</> : <><Eye size={12} /> Check pending</>}</Badge><button className={`save-button ${saved ? "saved" : ""}`} onClick={onSave} aria-label={saved ? "Remove saved lot" : "Save lot"}><Heart size={16} fill={saved ? "currentColor" : "none"} /></button></div><span className="lot-id">{lot.id}</span></div><div className="lot-card-body"><div className="lot-title-row"><div><h3>{lot.variety}</h3><span>{lot.crop}</span></div><div className="lot-price-block"><strong className="lot-price">{lot.price}</strong><small>per kg</small></div></div><button className="producer-link" onClick={onProducer}><span className="producer-mini-avatar">{lot.producer.split(" ").map((word) => word[0]).slice(0, 2).join("")}</span><span>{lot.producer}</span><ExternalLink size={12} /></button><div className="product-card-facts"><span><MapPin size={13} />{lot.location.split(",")[0]}</span><span><Warehouse size={13} />{lot.quantity}</span></div><div className="product-card-bottom"><span className="product-rating"><Star size={12} fill="currentColor" /> {profile?.rating ?? "New"} <small>({profile?.reviews ?? 0})</small></span><span className="harvest-label"><CalendarDays size={12} />{lot.harvest}</span></div><button className="request-button" onClick={onProducer}>View supply details <ArrowRight size={14} /></button></div></Card>;
 }
 
 function WeatherDay({ day, icon, temp }: { day: string; icon: string; temp: string }) { return <div className="weather-day"><span>{day}</span><b>{icon}</b><strong>{temp}</strong></div>; }
@@ -313,10 +337,14 @@ function BuyerRequests() {
 }
 
 function NetworkView({ setCompany }: { setCompany: (value: (typeof producerProfiles)[number]) => void }) {
-  return <div className="network-view"><div className="network-banner"><div><div className="eyebrow">BUILT FOR AGRI-FOOD TRADE</div><h2>Good partnerships<br />grow from <i>good information.</i></h2><p>Explore verified producer profiles and discover the right partners for your next order.</p></div><div className="network-banner-art"><div className="network-orbit orbit-one" /><div className="network-orbit orbit-two" /><div className="network-avatar nva-one">KF</div><div className="network-avatar nva-two">LC</div><div className="network-avatar nva-three">SF</div><div className="network-center"><Globe2 size={27} /></div></div></div>
-    <SectionHeading title="Producer groups to know" detail="Company profiles, member scale, crop focus, and trade readiness" action={<button className="filter-button"><Filter size={15} /> Filter</button>} />
-    <div className="profiles-grid">{producerProfiles.map((profile) => <Card className="profile-card" key={profile.name}><div className={`profile-cover cover-${profile.color}`}><span className="profile-cover-symbol">{profile.initials}</span><button className="save-button"><Bookmark size={15} /></button></div><div className="profile-content"><div className="profile-logo">{profile.initials}</div><div className="profile-title"><div><h3>{profile.name}</h3><span>{profile.type}</span></div>{profile.verified && <Badge className="profile-verified"><ShieldCheck size={12} /> Verified</Badge>}</div><div className="profile-region"><MapPin size={14} />{profile.region}</div><div className="profile-facts"><div><Users size={15} /><span>{profile.members}</span></div><div><Leaf size={15} /><span>{profile.crops}</span></div></div><div className="profile-reliability"><span className="reliability-mark"><Check size={13} /></span>{profile.reliability}</div><div className="profile-rating"><span className="rating-stars"><Star size={12} fill="currentColor" /> {profile.rating}</span><span>{profile.reviews} trade reviews</span></div><button className="profile-button" onClick={() => setCompany(profile)}>View company profile <ArrowRight size={14} /></button></div></Card>)}</div>
-    <div className="network-note"><Sparkles size={16} /><span>Profiles are built around practical trade details: member base, crop calendar, quality records, and logistics reach.</span></div>
+  const [query, setQuery] = useState("");
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const results = producerProfiles.filter((profile) => `${profile.name} ${profile.type} ${profile.region} ${profile.crops}`.toLowerCase().includes(query.toLowerCase()) && (!verifiedOnly || profile.verified));
+  return <div className="network-view">
+    <div className="directory-toolbar"><div className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search organisations, crops, or regions" /></div><button className={`directory-filter ${verifiedOnly ? "active" : ""}`} onClick={() => setVerifiedOnly((value) => !value)}><ShieldCheck size={15} /> Verified only <span>{verifiedOnly ? "On" : "Off"}</span></button></div>
+    <div className="directory-heading"><div><h2>Producer organisations</h2><p>Profiles include location, crops, member scale, and trade history.</p></div><span>{results.length} organisations</span></div>
+    <div className="partner-list">{results.map((profile) => <Card className="partner-row" key={profile.name}><div className={`partner-mark partner-${profile.color}`}>{profile.initials}</div><div className="partner-main"><div className="partner-title"><h3>{profile.name}</h3><span className={profile.verified ? "partner-verified" : "partner-pending"}>{profile.verified ? <><ShieldCheck size={13} /> Verified</> : "Verification pending"}</span></div><p>{profile.type} <span>·</span> <MapPin size={12} /> {profile.region}</p><div className="partner-crops">{profile.crops.split(" · ").map((crop) => <span key={crop}>{crop}</span>)}</div></div><div className="partner-metrics"><span><strong>{profile.members.split(" ")[0]}</strong><small>members</small></span><span><strong className="partner-rating"><Star size={12} fill="currentColor" /> {profile.rating}</strong><small>{profile.reviews} trade reviews</small></span><span><strong>{profile.reliability}</strong><small>trade record</small></span></div><button className="profile-button" onClick={() => setCompany(profile)}>View profile <ArrowRight size={14} /></button></Card>)}{results.length === 0 && <div className="empty-state"><Building2 size={24} /><strong>No matching organisations</strong><span>Try a different crop, organisation, or region.</span></div>}</div>
+    <div className="directory-footnote">Concept demo data · Contact and review actions are illustrative.</div>
   </div>;
 }
 
@@ -329,16 +357,29 @@ function ForecastView() {
 }
 
 function ShipmentView({ selectedShipment, setSelectedShipment }: { selectedShipment: number; setSelectedShipment: (value: number) => void }) {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All statuses");
   const shipment = shipments[selectedShipment];
-  const steps = ["Farm collection", "Packhouse & quality", "Export cleared", "In transit", "Buyer delivery"];
-  return <div className="shipments-view"><div className="shipment-controls"><div><div className="eyebrow">LIVE LOGISTICS · DEMO DATA</div><h2>Shipments in motion</h2><p>Follow each lot from the collection point to its buyer.</p></div><button className="button-quiet"><Filter size={15} /> Filter shipments</button></div>
-    <div className="shipment-layout"><div className="shipment-list">{shipments.map((item, index) => <button key={item.id} onClick={() => setSelectedShipment(index)} className={`shipment-list-item ${selectedShipment === index ? "selected" : ""}`}><div className="shipment-list-top"><span className="shipment-id">{item.id}</span><StatusPill tone={item.step > 1 ? "blue" : item.step === 1 ? "amber" : "gray"}>{item.status}</StatusPill></div><strong>{item.crop}</strong><span className="shipment-route-text"><MapPin size={13} />{item.from}<ArrowRight size={12} />{item.to}</span><div className="shipment-list-bottom"><span>{item.qty}</span><span>ETA {item.eta.split(",")[0]}</span></div></button>)}</div>
-      <div className="shipment-detail"><div className="shipment-detail-head"><div><div className="eyebrow">{shipment.id} · {shipment.carrier}</div><h3>{shipment.crop}</h3><span>{shipment.qty} <i>·</i> {shipment.from} to {shipment.to}</span></div><Button className="primary-button small-primary"><ExternalLink size={14} /> Open tracking link</Button></div>
-        <div className="map-toolbar"><span><Globe2 size={15} /> INDIA <ArrowRight size={13} /> SINGAPORE</span><span className="map-legend"><i className="legend-origin" /> Origin <i className="legend-current" /> Current leg <i className="legend-destination" /> Destination</span><span className="map-scale">SEA ROUTE · EST. 3,200 KM</span></div><div className="route-map mapcn-route-map"><MapCN center={[91.3, 7.2]} zoom={3.2} className="shipment-map-canvas"><MapRoute coordinates={shipmentCoordinates} progress={Math.min(0.95, (shipment.step + 1) / 5)} color="#a8bd9f" width={5} opacity={0.9} activeColor="#4f8a62" activeWidth={5} activeOpacity={1}><RouteProgress color="#4f8a62" width={5} opacity={1} /><RouteMarker at="start"><MarkerContent><div className="mapcn-point mapcn-origin">IN</div></MarkerContent><MarkerTooltip>Collection · Chittoor, Andhra Pradesh</MarkerTooltip></RouteMarker><RouteMarker at="progress"><MarkerContent><div className="mapcn-current"><Truck size={13} /></div></MarkerContent><MarkerTooltip>Shipment position · {shipment.status}</MarkerTooltip></RouteMarker><RouteMarker at="end"><MarkerContent><div className="mapcn-point mapcn-destination">SG</div></MarkerContent><MarkerTooltip>Buyer delivery · Singapore</MarkerTooltip></RouteMarker></MapRoute><MapMarker longitude={80.27} latitude={13.08}><MarkerContent><div className="mapcn-port">2</div></MarkerContent><MarkerTooltip>Export port · Chennai</MarkerTooltip></MapMarker><MapControls position="bottom-right" showCompass showFullscreen /></MapCN><div className="mapcn-status"><span className="signal-dot" /> {shipment.status}<small>Updated 2h ago</small></div></div><div className="map-route-footer"><span><Truck size={14} /> Chittoor packhouse <small>Origin</small></span><i /><span><PackageCheck size={14} /> Chennai port <small>Export cleared</small></span><i className="active-leg" /><span><Globe2 size={14} /> Singapore <small>ETA {shipment.eta}</small></span></div>
-        <div className="shipment-progress-track">{steps.map((step, index) => <div className={`shipment-step ${index < shipment.step ? "complete" : index === shipment.step ? "active" : ""}`} key={step}><span className="step-circle">{index < shipment.step ? <Check size={12} /> : index + 1}</span><span>{step}</span></div>)}</div>
-        <div className="shipment-detail-grid"><div><span>Estimated arrival</span><strong>{shipment.eta}</strong></div><div><span>Transport partner</span><strong>{shipment.carrier}</strong></div><div><span>Documents</span><strong className="doc-ready"><CheckCircle2 size={14} /> 4 of 4 attached</strong></div></div>
-      </div></div>
-    </div>;
+  const steps = ["Booked", "Packed", "In transit", "At destination", "Delivered"];
+  const visibleShipments = shipments.map((item, index) => ({ item, index })).filter(({ item }) =>
+    `${item.id} ${item.crop} ${item.from} ${item.to} ${item.carrier}`.toLowerCase().includes(search.toLowerCase()) &&
+    (statusFilter === "All statuses" || item.status.toLowerCase() === statusFilter.toLowerCase())
+  );
+  return <div className="tracking-console">
+    <aside className="tracking-list-panel">
+      <div className="tracking-list-heading"><div><div className="eyebrow">SHIPMENT OPERATIONS</div><h2>Tracking list</h2><p>Live view of produce in your supply chain</p></div><span className="tracking-count">{shipments.length}</span></div>
+      <div className="tracking-search"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search ID, crop, or location" /></div>
+      <div className="tracking-filters"><select aria-label="Filter by status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option>All statuses</option><option>In transit</option><option>At packhouse</option><option>Quality clearance</option></select><span><CalendarDays size={14} /> Recent shipments <ChevronDown size={13} /></span></div>
+      <div className="tracking-results">{visibleShipments.map(({ item, index }) => <button key={item.id} onClick={() => setSelectedShipment(index)} className={`tracking-shipment ${selectedShipment === index ? "selected" : ""}`}><div className="tracking-shipment-top"><span>{item.id}</span><i className={`tracking-status-dot status-${index === 0 ? "moving" : index === 1 ? "packing" : "review"}`} /> <b>{item.status}</b></div><div className="tracking-shipment-row"><div><strong>{item.crop}</strong><small>{item.carrier}</small></div><div className="tracking-eta"><small>{index === 0 ? "ETA" : "TARGET"}</small><strong>{item.eta.split(",")[0]}</strong></div></div><div className="tracking-route-pair"><span><small>ORIGIN</small>{item.from}</span><ArrowRight size={14} /><span><small>DESTINATION</small>{item.to}</span></div><div className="tracking-stepper">{steps.map((step, stepIndex) => <div className={`tracking-step ${stepIndex <= item.step + 1 ? "done" : ""} ${stepIndex === item.step + 1 ? "current" : ""}`} key={step}><i>{stepIndex < item.step + 1 ? <Check size={10} /> : null}</i><small>{step}</small></div>)}</div></button>)}{visibleShipments.length === 0 && <div className="tracking-empty">No shipments match those filters.</div>}</div>
+      <div className="tracking-list-footer"><span><span className="tracking-live-dot" /> Demo location feed</span><button onClick={() => { setSearch(""); setStatusFilter("All statuses"); }}>Clear filters</button></div>
+    </aside>
+
+    <section className="tracking-map-panel">
+      <div className="tracking-map-header"><div><div className="eyebrow">SELECTED SHIPMENT · {shipment.id}</div><h2>{shipment.crop}</h2><p>{shipment.qty} <span>·</span> {shipment.from} <ArrowRight size={13} /> {shipment.to}</p></div><div className="tracking-map-header-status"><i className={`tracking-status-dot status-${selectedShipment === 0 ? "moving" : selectedShipment === 1 ? "packing" : "review"}`} />{shipment.status}</div></div>
+      <div className="tracking-map-canvas"><MapCN theme="dark" center={[91.3, 7.2]} zoom={3.3} className="tracking-map"><MapRoute coordinates={shipmentCoordinates} progress={Math.min(0.95, (shipment.step + 1) / 5)} color="#425754" width={5} opacity={1} activeColor="#10bfa7" activeWidth={5} activeOpacity={1} dashArray={[1, 1]}><RouteProgress color="#10bfa7" width={5} opacity={1} dashArray={[1, 1]} /><RouteMarker at="start"><MarkerContent><div className="mapcn-point mapcn-origin">IN</div></MarkerContent><MarkerTooltip>Farm collection · Chittoor, India</MarkerTooltip></RouteMarker><RouteMarker at="progress"><MarkerContent><div className="mapcn-current"><Truck size={14} /></div></MarkerContent><MarkerTooltip>{shipment.status} · Updated 2 hours ago</MarkerTooltip></RouteMarker><RouteMarker at="end"><MarkerContent><div className="mapcn-point mapcn-destination">SG</div></MarkerContent><MarkerTooltip>Buyer delivery · Singapore</MarkerTooltip></RouteMarker></MapRoute><MapMarker longitude={80.27} latitude={13.08}><MarkerContent><div className="mapcn-port">2</div></MarkerContent><MarkerTooltip>Export port · Chennai</MarkerTooltip></MapMarker><MapControls position="top-right" showCompass showFullscreen /></MapCN><div className="mapcn-legends"><span><i className="legend-live" /> Tracked leg</span><span><i className="legend-planned" /> Planned route</span><span><MapPin size={12} /> Chennai port</span></div><div className="mapcn-location-card"><span className="mapcn-location-icon"><Truck size={15} /></span><span><small>LAST REPORTED POSITION</small><b>Bay of Bengal · at sea</b><em>Updated 2 hours ago</em></span></div></div>
+      <div className="tracking-map-footer"><span><span className="tracking-live-dot" /> Tracking active</span><span>Route preview · India to Singapore</span><span>Estimated arrival <b>{shipment.eta}</b></span></div>
+    </section>
+  </div>;
 }
 
 function CompanyProfile({ company, onClose }: { company: (typeof producerProfiles)[number]; onClose: () => void }) {
