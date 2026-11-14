@@ -1,5 +1,5 @@
-import HarvestLink from "../page";
+import CachedHarvestLink from "../cached-harvestlink";
 
 export default function ShipmentsPage() {
-  return <HarvestLink initialView="shipments" />;
+  return <CachedHarvestLink initialView="shipments" />;
 }

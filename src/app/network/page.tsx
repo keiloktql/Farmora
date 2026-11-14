@@ -1,5 +1,5 @@
-import HarvestLink from "../page";
+import CachedHarvestLink from "../cached-harvestlink";
 
 export default function TradeNetworkPage() {
-  return <HarvestLink initialView="network" />;
+  return <CachedHarvestLink initialView="network" />;
 }

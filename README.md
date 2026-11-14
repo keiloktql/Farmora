@@ -22,3 +22,7 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+## Cache behavior
+
+Next.js Cache Components are enabled. The shared page shell uses the `hours` cache profile: it revalidates hourly and expires after one day. In local development, Next.js may bypass server caches when a request asks for `no-cache`, such as when browser DevTools has “Disable cache” enabled or after a hard refresh.

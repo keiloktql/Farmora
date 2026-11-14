@@ -1,5 +1,5 @@
-import HarvestLink from "../page";
+import CachedHarvestLink from "../cached-harvestlink";
 
 export default function WeatherPage() {
-  return <HarvestLink initialView="forecasts" />;
+  return <CachedHarvestLink initialView="forecasts" />;
 }
