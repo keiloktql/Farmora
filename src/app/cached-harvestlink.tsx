@@ -1,11 +1,11 @@
 import { cacheLife } from "next/cache";
-import HarvestLinkApp from "@/components/harvestlink-app";
+import CropPlanningApp from "@/components/crop-planning-app";
 
-type View = "marketplace" | "network" | "forecasts" | "shipments";
+type View = "overview" | "demand" | "plan" | "farmers" | "guidance" | "results";
 
 export default async function CachedHarvestLink({ initialView }: { initialView: View }) {
   "use cache";
   cacheLife("hours");
 
-  return <HarvestLinkApp initialView={initialView} />;
+  return <CropPlanningApp initialView={initialView} />;
 }

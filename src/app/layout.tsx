@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HarvestLink Exchange",
-  description: "A shared trade network for producer groups, buyers, and exporters.",
+  title: "HarvestLink Crop Planning",
+  description: "FPO crop planning, farmer opt-in, and buyer-led quality guidance.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

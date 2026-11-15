@@ -1,5 +1,5 @@
-import CachedHarvestLink from "../cached-harvestlink";
+import { redirect } from "next/navigation";
 
 export default function WeatherPage() {
-  return <CachedHarvestLink initialView="forecasts" />;
+  redirect("/guidance");
 }
