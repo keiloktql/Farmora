@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { ArrowDownRight, ArrowRight, CalendarDays, Check, CheckCircle2, ChevronDown, ClipboardCheck, CloudSun, FileSpreadsheet, Leaf, MessageCircle, MessageSquareText, Plus, Save, Send, Settings2, ShieldCheck, Sprout, TrendingUp, Users, Wheat, Wifi, WifiOff, Home, Map as MapIcon, UserRound } from "lucide-react";
-import { Map as MapCN, MapControls, MapMarker, MarkerContent, MarkerTooltip } from "@/components/ui/map";
+import { Map as MapCN, MapControls, MapGeoJSON, MapMarker, MarkerContent, MarkerTooltip, useMap } from "@/components/ui/map";
+import type { Feature, Polygon } from "geojson";
 
 type View = "overview" | "demand" | "plan" | "farmers" | "guidance" | "results" | "farmer-home" | "farmer-plan" | "farmer-guidance" | "farmer-profile";
 type Response = "Accepted" | "Pending" | "Declined" | "Call requested";
@@ -224,10 +225,61 @@ function FarmerExperience({ view, farmer, demand, navigate, updateResponse, noti
   const navigation = [{ id: "farmer-home" as const, label: "Home", icon: Home }, { id: "farmer-plan" as const, label: "My plan", icon: Sprout }, { id: "farmer-guidance" as const, label: "Guidance", icon: MessageCircle }, { id: "farmer-profile" as const, label: "Profile", icon: UserRound }];
   const accepted = farmer.response === "Accepted";
   const title = pageTitles[view];
+  const [farmBoundary, setFarmBoundary] = useState<[number, number][]>([]);
+  const [boundaryLoaded, setBoundaryLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(`harvestlink-farm-boundary-${farmer.id}`);
+      setFarmBoundary(stored ? JSON.parse(stored) as [number, number][] : []);
+    } catch { setFarmBoundary([]); }
+    setBoundaryLoaded(true);
+  }, [farmer.id]);
+  useEffect(() => {
+    if (!boundaryLoaded) return;
+    try { window.localStorage.setItem(`harvestlink-farm-boundary-${farmer.id}`, JSON.stringify(farmBoundary)); } catch { /* Drawing remains available for this visit. */ }
+  }, [farmBoundary, boundaryLoaded, farmer.id]);
   return <div className="cp-farmer-shell"><header className="cp-farmer-header"><button className="cp-brand" onClick={() => navigate("farmer-home")}><span className="cp-brand-mark"><Leaf size={18} /></span><span><b>HarvestLink</b><small>YOUR FARM SPACE</small></span></button><button className="cp-role-switch" onClick={() => navigate("overview")}>Switch to FPO <ArrowRight size={14} /></button></header><main className="cp-farmer-content"><div className="cp-farmer-context"><span className="cp-avatar">KF</span><div><b>Kaveri Farmers Collective</b><small>Rabi 2026–27 · Chittoor</small></div><span className="cp-context-dot">●</span></div><div className="cp-farmer-heading"><span className="cp-eyebrow">{title.label}</span><h1>{view === "farmer-home" ? `Namaste, ${farmer.name.split(" ")[0]}` : title.title}</h1><p>{view === "farmer-home" ? "Here’s what your FPO is planning with you this season." : title.description}</p></div>
     {view === "farmer-home" && <><section className="cp-farmer-hero"><div className="cp-farmer-crop-icon"><Sprout size={25} /></div><span className="cp-farmer-pill">RABI 2026–27</span><h2>{demand.crop}<small>{demand.variety}</small></h2><div className="cp-farmer-hero-stats"><div><small>Suggested area</small><b>{farmer.area.toFixed(2)} acres</b></div><div><small>Harvest window</small><b>10–20 Mar</b></div></div><small className="cp-farmer-estimate">Planning estimate · harvest and sale are not guaranteed</small></section><section className="cp-farmer-card"><span className="cp-eyebrow">YOUR RESPONSE</span><div className="cp-farmer-response"><ResponseBadge response={farmer.response} /><span>{accepted ? "You’re included in the current plan." : "Your choice is voluntary. You can change it anytime."}</span></div><div className="cp-farmer-actions"><button className={accepted ? "chosen" : ""} onClick={() => updateResponse(farmer.id, "Accepted")}><Check size={16} /> I’m interested</button><button onClick={() => updateResponse(farmer.id, "Call requested")}><MessageCircle size={16} /> Ask my FPO</button></div><button className="cp-farmer-decline" onClick={() => { updateResponse(farmer.id, "Declined"); notice("Your response was updated. Your FPO can see your choice."); }}>I don’t want to join this plan</button></section><section className="cp-farmer-card cp-weather-card"><span className="cp-weather-icon"><CloudSun size={19} /></span><div><b>Season outlook</b><p>Check local weather with your FPO before changing irrigation or crop care.</p><button onClick={() => navigate("farmer-guidance")}>See this week’s guidance <ArrowRight size={14} /></button></div></section><p className="cp-farmer-footnote"><ShieldCheck size={14} /> Your participation is voluntary. Ask the FPO about costs, inputs, or buyer requirements before deciding.</p></>}
-    {view === "farmer-plan" && <><section className="cp-farmer-card"><span className="cp-eyebrow">CROP & AREA</span><h2>{demand.crop} · {demand.variety}</h2><div className="cp-farmer-detail-row"><span>Proposed area</span><b>{farmer.area.toFixed(2)} acres</b></div><div className="cp-farmer-detail-row"><span>Land you marked available</span><b>{farmer.available.toFixed(2)} acres</b></div><div className="cp-farmer-detail-row"><span>Expected harvest</span><b>About {(farmer.area * 6.4).toFixed(1)} tonnes*</b></div><small className="cp-farmer-estimate">*Illustrative estimate after a 20% buffer; actual harvest varies.</small></section><section className="cp-farmer-card"><span className="cp-eyebrow">BUYER QUALITY REQUEST</span><h3>What the buyer is looking for</h3><p>{demand.grade}</p><p>Harvest timing: {demand.window}</p><div className="cp-farmer-info"><ShieldCheck size={17} /><span>Ask the FPO to explain any extra checks or costs before you commit.</span></div></section><section className="cp-farmer-card"><span className="cp-eyebrow">ORDER STATUS</span><b>{demand.confirmed} tonnes confirmed with buyer</b><p>This is the FPO’s buyer order, not a guaranteed amount from your farm.</p></section></>}
+    {view === "farmer-plan" && <><section className="cp-farmer-card"><span className="cp-eyebrow">CROP & AREA</span><h2>{demand.crop} · {demand.variety}</h2><div className="cp-farmer-detail-row"><span>Proposed area</span><b>{farmer.area.toFixed(2)} acres</b></div><div className="cp-farmer-detail-row"><span>Land you marked available</span><b>{farmer.available.toFixed(2)} acres</b></div><div className="cp-farmer-detail-row"><span>Expected harvest</span><b>About {(farmer.area * 6.4).toFixed(1)} tonnes*</b></div><small className="cp-farmer-estimate">*Illustrative estimate after a 20% buffer; actual harvest varies.</small></section><FarmBoundaryEditor farmerId={farmer.id} crop={demand.crop} allocatedArea={farmer.area} boundary={farmBoundary} setBoundary={setFarmBoundary} /><section className="cp-farmer-card"><span className="cp-eyebrow">BUYER QUALITY REQUEST</span><h3>What the buyer is looking for</h3><p>{demand.grade}</p><p>Harvest timing: {demand.window}</p><div className="cp-farmer-info"><ShieldCheck size={17} /><span>Ask the FPO to explain any extra checks or costs before you commit.</span></div></section><section className="cp-farmer-card"><span className="cp-eyebrow">ORDER STATUS</span><b>{demand.confirmed} tonnes confirmed with buyer</b><p>This is the FPO’s buyer order, not a guaranteed amount from your farm.</p></section></>}
     {view === "farmer-guidance" && <><section className="cp-farmer-card cp-guidance-next"><span className="cp-farmer-pill">NEXT REMINDER · 18 JAN</span><h2>Check field moisture</h2><p>Before irrigation, check soil moisture. If you notice unusual leaves, pest damage, or other changes, share a photo or ask your FPO field coordinator.</p><button onClick={() => notice("Your FPO coordinator will follow up. This is a demo; no message was sent.")}><MessageCircle size={16} /> Ask my FPO for help</button></section><section className="cp-farmer-card"><span className="cp-eyebrow">BEFORE HARVEST</span><h3>Buyer quality needs</h3><p>{demand.grade}</p><p>Confirm the collection date and any documentation with your FPO before picking.</p></section><p className="cp-farmer-footnote"><ShieldCheck size={14} /> Guidance is a draft for this demo. Follow locally reviewed advice from your FPO or agriculture officer.</p></>}
     {view === "farmer-profile" && <><section className="cp-farmer-card cp-profile-card"><span className="cp-profile-avatar">{farmer.name.split(" ").map((word) => word[0]).join("").slice(0, 2)}</span><h2>{farmer.name}</h2><p>{farmer.village} · Chittoor, Andhra Pradesh</p><div className="cp-farmer-detail-row"><span>Member ID</span><b>{farmer.id}</b></div><div className="cp-farmer-detail-row"><span>Phone</span><b>{farmer.phone}</b></div><div className="cp-farmer-detail-row"><span>Available area</span><b>{farmer.available.toFixed(2)} acres</b></div><button className="cp-farmer-wide-button" onClick={() => notice("Your FPO coordinator can update your details. This is a demo contact action.")}>Ask FPO to update details</button></section><p className="cp-farmer-footnote"><ShieldCheck size={14} /> Only share details needed for this crop plan. Your FPO manages this information.</p></>}
     </main><nav className="cp-farmer-tabbar">{navigation.map(({ id, label, icon: Icon }) => <button key={id} className={view === id ? "active" : ""} onClick={() => navigate(id)}><Icon size={19} /><span>{label}</span></button>)}</nav>{/* Desktop shows the same compact bottom navigation for easy role demo. */}</div>;
+}
+
+function estimateBoundaryAcres(points: [number, number][]) {
+  if (points.length < 3) return 0;
+  const meanLatitude = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+  const projected = points.map(([longitude, latitude]) => [longitude * 111320 * Math.cos(meanLatitude * Math.PI / 180), latitude * 110540]);
+  const twiceArea = projected.reduce((sum, point, index) => {
+    const next = projected[(index + 1) % projected.length];
+    return sum + point[0] * next[1] - next[0] * point[1];
+  }, 0);
+  return Math.abs(twiceArea / 2) / 4046.86;
+}
+
+function FarmBoundaryEditor({ farmerId, crop, allocatedArea, boundary, setBoundary }: { farmerId: string; crop: string; allocatedArea: number; boundary: [number, number][]; setBoundary: (points: [number, number][] | ((points: [number, number][]) => [number, number][])) => void }) {
+  const [drawing, setDrawing] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const addPoint = useCallback((point: [number, number]) => { setBoundary((points) => [...points, point]); setSaved(false); }, [setBoundary]);
+  const outlineAcres = estimateBoundaryAcres(boundary);
+  const centroid: [number, number] = boundary.length ? [boundary.reduce((sum, p) => sum + p[0], 0) / boundary.length, boundary.reduce((sum, p) => sum + p[1], 0) / boundary.length] : [0, 0];
+  const scale = outlineAcres > 0 ? Math.min(.9, Math.sqrt(Math.min(1, allocatedArea / outlineAcres)) * .9) : .55;
+  const cropArea = boundary.map((point): [number, number] => [centroid[0] + (point[0] - centroid[0]) * scale, centroid[1] + (point[1] - centroid[1]) * scale]);
+  const outlineFeature: Feature<Polygon> | null = boundary.length >= 3 ? { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...boundary, boundary[0]]] } } : null;
+  const cropFeature: Feature<Polygon> | null = cropArea.length >= 3 ? { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [[...cropArea, cropArea[0]]] } } : null;
+  return <section className="cp-farmer-card cp-farm-boundary"><div className="cp-farm-map-heading"><div><span className="cp-eyebrow">YOUR FARM MAP</span><h2>See the proposed {crop} area</h2><p>Outline your farm, then compare the suggested crop area with your land.</p></div><span className="cp-farm-area-chip">{allocatedArea.toFixed(2)} ac<br /><small>proposed</small></span></div><div className="cp-farm-map-toolbar"><button className={drawing ? "drawing" : ""} onClick={() => setDrawing((active) => !active)}>{drawing ? "Pause drawing" : boundary.length >= 3 ? "Edit boundary" : "Draw farm boundary"}</button><button disabled={boundary.length < 3} onClick={() => { setDrawing(false); setSaved(true); }}>Save outline</button><button disabled={!boundary.length} onClick={() => { setBoundary([]); setSaved(false); setDrawing(false); }}>Clear</button></div>{drawing && <div className="cp-drawing-instructions">Tap the map at each corner of your field. Add at least 3 points, then save.</div>}<div className={`cp-farm-map-wrap ${drawing ? "is-drawing" : ""}`}><MapCN theme="light" viewport={{ center: boundary.length ? centroid : [79.05, 13.48], zoom: boundary.length ? 14 : 12 }} className="cp-farm-map"><FarmMapClickCapture active={drawing} onPoint={addPoint} />{outlineFeature && <MapGeoJSON id={`farm-outline-${farmerId}`} data={outlineFeature} fillPaint={{ "fill-color": "#4e8d63", "fill-opacity": 0.18 }} linePaint={{ "line-color": "#34764f", "line-width": 3 }} />}{cropFeature && <MapGeoJSON id={`crop-allocation-${farmerId}`} data={cropFeature} fillPaint={{ "fill-color": "#dce96c", "fill-opacity": 0.72 }} linePaint={{ "line-color": "#779b36", "line-width": 2 }} />}{boundary.map(([longitude, latitude], index) => <MapMarker key={`${longitude}-${latitude}-${index}`} longitude={longitude} latitude={latitude}><MarkerContent><span className="cp-farm-vertex">{index + 1}</span></MarkerContent></MapMarker>)}<MapControls position="top-right" /></MapCN><div className="cp-farm-map-legend"><span><i className="farm-outline-key" /> Your farm outline</span><span><i className="crop-allocation-key" /> Proposed crop area</span></div></div><div className="cp-farm-map-summary"><span>{boundary.length >= 3 ? `Outline area ~${outlineAcres.toFixed(2)} acres` : "No farm outline saved yet"}</span><span>{saved ? "Saved on this device" : `${boundary.length} boundary points`}</span></div><p className="cp-farm-map-disclaimer">Map starts near Chittoor as a demo. Pan to your farm before drawing. Area is approximate and not a land survey; confirm the boundary and crop area with your FPO.</p></section>;
+}
+
+function FarmMapClickCapture({ active, onPoint }: { active: boolean; onPoint: (point: [number, number]) => void }) {
+  const { map } = useMap();
+  useEffect(() => {
+    if (!map) return;
+    const canvas = map.getCanvas();
+    canvas.style.cursor = active ? "crosshair" : "";
+    if (!active) return () => { canvas.style.cursor = ""; };
+    const handleClick = (event: { lngLat: { lng: number; lat: number } }) => onPoint([event.lngLat.lng, event.lngLat.lat]);
+    map.on("click", handleClick);
+    return () => { map.off("click", handleClick); canvas.style.cursor = ""; };
+  }, [map, active, onPoint]);
+  return null;
 }
