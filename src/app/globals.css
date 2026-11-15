@@ -745,3 +745,82 @@ button { cursor: pointer; }
 @media(max-width:980px) { .cp-crop-tiles { grid-template-columns:1fr; }.cp-crop-tile { min-height:104px; grid-template-columns:minmax(0,1fr) 82px; } }
 @media(max-width:560px) { .cp-crop-portfolio-heading { align-items:flex-start; flex-direction:column; gap:7px; }.cp-crop-portfolio-heading h2 { font-size:18px; }.cp-crop-tile { min-height:98px; padding:10px 12px; }.cp-crop-art { width:74px; height:76px; }.cp-crop-tile-copy b { font-size:14px; } }
 @media(prefers-reduced-motion:reduce) { .cp-crop-tile { transition:none; }.cp-crop-tile:hover { transform:none; } }
+
+/* Verdana Health system adapted for HarvestLink: calm navy structure, white
+   working surfaces, and sage reserved for actions and healthy states. */
+:root {
+  --background:#f8fafc;
+  --foreground:#0f172a;
+  --card:#ffffff;
+  --card-foreground:#0f172a;
+  --popover:#ffffff;
+  --popover-foreground:#0f172a;
+  --primary:#0f172a;
+  --primary-foreground:#ffffff;
+  --secondary:#f1f5f9;
+  --secondary-foreground:#0f172a;
+  --muted:#f1f5f9;
+  --muted-foreground:#64748b;
+  --accent:#059669;
+  --accent-foreground:#ffffff;
+  --destructive:#ef4444;
+  --border:#e2e8f0;
+  --input:#e2e8f0;
+  --ring:#0f172a;
+  --radius:8px;
+}
+body { background:#f8fafc; color:#0f172a; font-family:var(--font-dm-sans),Arial,sans-serif; }
+.cp-shell,.cp-farmer-shell { --cp-bg:#f8fafc; --cp-line:#e2e8f0; background:#f8fafc; color:#0f172a; font-family:var(--font-dm-sans),Arial,sans-serif; }
+.cp-shell h1,.cp-shell h2,.cp-shell h3,.cp-farmer-shell h1,.cp-farmer-shell h2,.cp-farmer-shell h3 { color:#0f172a; font-family:var(--font-plus-jakarta),sans-serif; letter-spacing:-.025em; }
+.cp-sidebar { background:#fff; color:#0f172a; border-right:1px solid #e2e8f0; }
+.cp-brand b,.cp-workspace b,.cp-nav-item.active,.cp-page-heading h1 { color:#0f172a; }
+.cp-brand-mark { background:#ecfdf5; color:#047857; }
+.cp-brand small,.cp-nav-label { color:#64748b; }
+.cp-workspace { background:#fff; border-color:#e2e8f0; }
+.cp-nav-item { color:#475569; }
+.cp-nav-item svg { color:#64748b; }
+.cp-nav-item:hover { background:#f8fafc; color:#0f172a; }
+.cp-nav-item.active { background:#f1f5f9; color:#0f172a; }
+.cp-nav-item.active svg { color:#059669; }
+.cp-nav-item i { background:#dcfce7; color:#15803d; }
+.cp-sync,.cp-user { border-color:#e2e8f0; }
+.cp-main { background:#f8fafc; }
+.cp-topbar { border-color:#e2e8f0; background:#ffffff; }
+.cp-crumb,.cp-crumb b { color:#475569; }
+.cp-content { color:#0f172a; }
+.cp-page-heading h1 { font-size:32px; font-weight:700; line-height:1.2; }
+.cp-page-heading p,.cp-panel-head p,.cp-farmer-shell p { color:#64748b; }
+.cp-eyebrow { color:#64748b; }
+.cp-primary { background:#0f172a!important; color:#fff!important; border-color:#0f172a!important; box-shadow:0 1px 3px #0f172a0d!important; }
+.cp-primary:hover { background:#020617!important; }
+.cp-outline-button { background:#fff!important; border-color:#0f172a!important; color:#0f172a!important; box-shadow:none!important; }
+.cp-outline-button:hover { background:#f1f5f9!important; }
+.cp-panel,.cp-stat,.cp-response-card,.cp-farmer-card,.cp-farmer-schedule,.cp-crop-tile,.cp-shipment-layout,.cp-profile-card {
+  border-color:#e2e8f0!important; border-radius:8px!important; box-shadow:none!important; background:#fff;
+}
+.cp-panel { padding:24px; }
+.cp-panel-head h2,.cp-panel h3,.cp-farmer-card h2,.cp-farmer-card h3 { color:#0f172a; }
+.cp-stat b,.cp-demand-comparison > div > b,.cp-trade-stats b { color:#0f172a; font-family:var(--font-fira-code),monospace; font-variant-numeric:tabular-nums; }
+.cp-stat-icon,.cp-attention-icon,.cp-farm-area-chip,.cp-risk-icon,.cp-farmer-task-icon { background:#ecfdf5; color:#047857; }
+.cp-map-frame,.cp-farm-map-wrap,.cp-shipment-map-frame { border-color:#e2e8f0; }
+.cp-local-save,.cp-success,.cp-response.accepted,.cp-status-success { color:#15803d; background:#22c55e15; }
+.cp-warning,.cp-response.pending,.cp-status-warning { color:#a16207; background:#eab30815; }
+.cp-error,.cp-status-error { color:#dc2626; background:#ef444415; }
+.cp-farm-map-toolbar button:first-child { background:#059669; border-color:#059669; color:#fff; }
+.cp-farm-map-toolbar button:first-child:hover { background:#047857; }
+.cp-farm-map-toolbar button:not(:first-child) { color:#0f172a; border-color:#cbd5e1; border-radius:8px; }
+.cp-farm-map-toolbar button:focus-visible,.cp-nav-item:focus-visible,.cp-primary:focus-visible,.cp-outline-button:focus-visible { outline:3px solid #0f172a2e; outline-offset:2px; }
+.cp-shell input,.cp-shell select,.cp-shell textarea,.cp-farmer-shell input,.cp-farmer-shell select,.cp-farmer-shell textarea {
+  border-color:#e2e8f0; border-radius:8px; background:#fff; color:#0f172a; font-family:var(--font-dm-sans),sans-serif;
+}
+.cp-shell input:focus,.cp-shell select:focus,.cp-shell textarea:focus,.cp-farmer-shell input:focus,.cp-farmer-shell select:focus,.cp-farmer-shell textarea:focus {
+  border-color:#0f172a; outline:0; box-shadow:0 0 0 3px #0f172a18;
+}
+.cp-crop-tile { transition:transform .16s ease,border-color .16s ease; }
+.cp-crop-tile:hover { border-color:#cbd5e1!important; box-shadow:none; }
+.cp-crop-tile-copy b,.cp-crop-portfolio-heading h2,.cp-farmer-task b { color:#0f172a; font-family:var(--font-plus-jakarta),sans-serif; }
+.cp-table th,.cp-eyebrow,.cp-nav-label { letter-spacing:.06em; }
+.cp-data-note,.cp-plan-guide,.cp-explainer { border-color:#e2e8f0; border-radius:8px; background:#f8fafc; color:#475569; }
+.cp-footer { border-color:#e2e8f0; color:#64748b; }
+@media(max-width:850px) { .cp-panel { padding:18px; }.cp-page-heading h1 { font-size:28px; } }
+@media(prefers-reduced-motion:reduce) { .cp-crop-tile { transition:none; } }
