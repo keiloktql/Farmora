@@ -673,3 +673,11 @@ button { cursor: pointer; }
 @media (max-width:560px) { .cp-farm-map-wrap { height:300px; }.cp-farm-map-toolbar { display:grid; grid-template-columns:1.2fr 1fr 1fr; }.cp-farm-map-toolbar button { padding:0 7px; font-size:10px; }.cp-farm-map-summary { font-size:10px; } }
 .cp-local-save { display:flex; align-items:center; gap:5px; color:#64836a; font-size:10px; white-space:nowrap; }.cp-local-save svg { color:#52855d; }.cp-data-note { display:flex; align-items:flex-start; gap:9px; margin:0 0 13px; padding:11px 13px; border:1px solid #e5eadc; border-radius:8px; background:#f7f8f1; color:#65745d; font-size:10px; line-height:1.5; }.cp-data-note svg { flex:none; margin-top:1px; color:#6d8d5e; }.cp-plan-guide { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; padding:14px 16px; border:1px solid #e6ebe4; border-radius:10px; background:#fff; }.cp-plan-guide > div { display:grid; gap:5px; }.cp-plan-guide b { color:#345541; font-size:11px; font-weight:700; }.cp-plan-guide span { color:#7d8a7f; font-size:10px; }.cp-plan-guide > svg { flex:none; color:#a1ada2; }.cp-excluded-area { color:#9a7770; font-size:9px; font-weight:650; white-space:nowrap; }
 @media (max-width:760px) { .cp-plan-guide { align-items:flex-start; flex-direction:column; }.cp-plan-guide > svg { transform:rotate(90deg); }.cp-local-save { display:none; } }
+/* Keep the local save indicator compact and on one line in the header. */
+.cp-local-save { display:inline-flex; flex:0 0 auto; align-items:center; justify-content:center; gap:6px; min-height:28px; padding:0 9px; border:1px solid #e5ebe3; border-radius:999px; background:#f8faf6; color:#55745a; font-size:10px !important; line-height:1; white-space:nowrap; }
+.cp-local-save > span { display:inline !important; color:inherit; font-size:10px !important; line-height:1; white-space:nowrap; }
+.cp-local-save svg { display:block; flex:none; width:13px; height:13px; color:#52855d; }
+.cp-top-actions { flex:0 0 auto; gap:9px; }
+.cp-crumb { min-width:0; flex:1 1 auto; overflow:hidden; white-space:nowrap; }
+@media (max-width:850px) { .cp-topbar { flex-wrap:wrap; gap:8px; padding-top:9px; padding-bottom:9px; }.cp-top-actions { width:100%; justify-content:flex-start; }.cp-local-save { min-height:26px; } }
+@media (max-width:560px) { .cp-top-actions { display:none; } }
