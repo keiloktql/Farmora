@@ -720,3 +720,28 @@ button { cursor: pointer; }
 @media(max-width:600px) { .cp-trade-stats { gap:7px; }.cp-trade-stats > div { padding:10px; }.cp-trade-stats b { font-size:19px; }.cp-trade-partner { align-items:flex-start; }.cp-trade-partner p { line-height:1.4; }.cp-trade-verified { font-size:8px; } }
 
 .cp-farmer-schedule { padding:17px; }.cp-farmer-schedule-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }.cp-farmer-schedule-head h2 { margin:5px 0 4px; color:#304b38; font-size:18px; font-weight:700; }.cp-farmer-schedule-head p { margin:0; color:#819084; font-size:11px; }.cp-farmer-task-list { display:grid; gap:0; margin-top:13px; }.cp-farmer-task { display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:start; gap:10px; padding:12px 0; border-top:1px solid #edf0eb; }.cp-farmer-task-icon { display:grid; place-items:center; width:32px; height:32px; border-radius:10px; background:#eff5eb; color:#4b7954; }.cp-farmer-task > div { display:grid; gap:4px; }.cp-farmer-task > div > span { color:#66826a; font-size:9px; font-weight:650; }.cp-farmer-task b { color:#304b38; font-size:12px; line-height:1.35; }.cp-farmer-task p { margin:0; color:#819084; font-size:10px; line-height:1.45; }.cp-farmer-task > small { padding:4px 7px; border-radius:99px; background:#f5f6ef; color:#72805e; font-size:8px; }.cp-farmer-schedule > .cp-farmer-estimate { display:block; margin:9px 0 0; line-height:1.45; }
+
+/* A small illustrated crop story for the FPO's target portfolio. */
+.cp-crop-portfolio { display:grid; gap:10px; padding:4px 0 2px; }
+.cp-crop-portfolio-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+.cp-crop-portfolio-heading h2 { margin:5px 0 3px; color:#2d4937; font-size:19px; font-weight:750; letter-spacing:-.35px; }
+.cp-crop-portfolio-heading p { margin:0; color:#7f8d81; font-size:11px; }
+.cp-portfolio-count { display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid #e4eadf; border-radius:99px; background:#fff; color:#55765a; font-size:10px; white-space:nowrap; }
+.cp-crop-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:11px; }
+.cp-crop-tile { position:relative; display:grid; grid-template-columns:minmax(0,1fr) 85px; align-items:center; min-height:122px; overflow:hidden; padding:12px 14px 12px 16px; border:1px solid #e6ebe2; border-radius:12px; background:#fff; text-align:left; box-shadow:0 3px 11px #27412b06; transition:transform .18s ease, box-shadow .18s ease; }
+.cp-crop-tile:hover { transform:translateY(-2px); box-shadow:0 7px 18px #27412b10; }
+.cp-crop-tile-copy { position:relative; z-index:1; display:grid; gap:4px; min-width:0; }
+.cp-crop-tile-copy > span { width:max-content; max-width:100%; overflow:hidden; color:#718574; font-size:8px; font-weight:700; letter-spacing:.42px; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+.cp-crop-tile-copy b { color:#304b38; font-size:15px; line-height:1.2; }
+.cp-crop-tile-copy small { color:#849187; font-size:10px; }
+.cp-crop-tile-arrow { position:absolute; right:12px; top:11px; z-index:2; color:#8a9c89; }
+.cp-crop-art { position:relative; display:grid; place-items:center; width:82px; height:87px; isolation:isolate; }
+.cp-crop-art::before { position:absolute; z-index:-1; width:70px; height:70px; border-radius:22px 22px 28px 28px; content:""; transform:rotate(9deg); }
+.cp-crop-art svg { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 5px 3px #304a3018); }
+.crop-tomato .cp-crop-art::before { background:linear-gradient(145deg,#f8e9d8,#f2d6c1); }
+.crop-mango .cp-crop-art::before { background:linear-gradient(145deg,#f8edc9,#f2df9b); }
+.crop-groundnut .cp-crop-art::before { background:linear-gradient(145deg,#e5edda,#d7e4c9); }
+.cp-crop-portfolio-note { color:#98a197; font-size:9px; }
+@media(max-width:980px) { .cp-crop-tiles { grid-template-columns:1fr; }.cp-crop-tile { min-height:104px; grid-template-columns:minmax(0,1fr) 82px; } }
+@media(max-width:560px) { .cp-crop-portfolio-heading { align-items:flex-start; flex-direction:column; gap:7px; }.cp-crop-portfolio-heading h2 { font-size:18px; }.cp-crop-tile { min-height:98px; padding:10px 12px; }.cp-crop-art { width:74px; height:76px; }.cp-crop-tile-copy b { font-size:14px; } }
+@media(prefers-reduced-motion:reduce) { .cp-crop-tile { transition:none; }.cp-crop-tile:hover { transform:none; } }
