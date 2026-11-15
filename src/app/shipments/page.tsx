@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import CropPlanningApp from "@/components/crop-planning-app";
 
 export default function ShipmentsPage() {
-  redirect("/results");
+  return <CropPlanningApp initialView="shipments" />;
 }

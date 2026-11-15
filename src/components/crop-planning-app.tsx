@@ -3,15 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
-import { ArrowDownRight, ArrowRight, CalendarDays, Check, CheckCircle2, ChevronDown, ClipboardCheck, CloudSun, FileSpreadsheet, Leaf, MessageCircle, MessageSquareText, Plus, Save, Send, Settings2, ShieldCheck, Sprout, TrendingUp, Users, Wheat, Wifi, WifiOff, Home, Map as MapIcon, UserRound } from "lucide-react";
-import { Map as MapCN, MapControls, MapGeoJSON, MapMarker, MarkerContent, MarkerTooltip, useMap } from "@/components/ui/map";
+import { ArrowDownRight, ArrowRight, CalendarDays, Check, CheckCircle2, ChevronDown, ClipboardCheck, CloudSun, FileSpreadsheet, Leaf, MessageCircle, MessageSquareText, Plus, Save, Send, Settings2, ShieldCheck, Sprout, TrendingUp, Users, Wheat, Wifi, WifiOff, Home, Map as MapIcon, UserRound, Truck, MapPin, PackageCheck, Globe2 } from "lucide-react";
+import { Map as MapCN, MapControls, MapGeoJSON, MapMarker, MarkerContent, MarkerTooltip, useMap, MapRoute, RouteProgress, RouteMarker } from "@/components/ui/map";
 import type { Feature, Polygon } from "geojson";
 
-type View = "overview" | "demand" | "plan" | "farmers" | "guidance" | "results" | "farmer-home" | "farmer-plan" | "farmer-guidance" | "farmer-profile";
+type View = "overview" | "demand" | "plan" | "farmers" | "guidance" | "results" | "shipments" | "farmer-home" | "farmer-plan" | "farmer-guidance" | "farmer-profile";
 type Response = "Accepted" | "Pending" | "Declined" | "Call requested";
 type Farmer = { id: string; name: string; village: string; phone: string; available: number; area: number; response: Response; updated: string };
-const paths: Record<View, string> = { overview: "/", demand: "/demand", plan: "/plan", farmers: "/farmers", guidance: "/guidance", results: "/results", "farmer-home": "/farmer", "farmer-plan": "/farmer/plan", "farmer-guidance": "/farmer/guidance", "farmer-profile": "/farmer/profile" };
-const pathToView: Record<string, View> = { "/": "overview", "/demand": "demand", "/plan": "plan", "/farmers": "farmers", "/guidance": "guidance", "/results": "results", "/farmer": "farmer-home", "/farmer/plan": "farmer-plan", "/farmer/guidance": "farmer-guidance", "/farmer/profile": "farmer-profile" };
+const paths: Record<View, string> = { overview: "/", demand: "/demand", plan: "/plan", farmers: "/farmers", guidance: "/guidance", results: "/results", shipments: "/shipments", "farmer-home": "/farmer", "farmer-plan": "/farmer/plan", "farmer-guidance": "/farmer/guidance", "farmer-profile": "/farmer/profile" };
+const pathToView: Record<string, View> = { "/": "overview", "/demand": "demand", "/plan": "plan", "/farmers": "farmers", "/guidance": "guidance", "/results": "results", "/shipments": "shipments", "/farmer": "farmer-home", "/farmer/plan": "farmer-plan", "/farmer/guidance": "farmer-guidance", "/farmer/profile": "farmer-profile" };
 const pageTitles: Record<View, { label: string; title: string; description: string }> = {
   overview: { label: "PILOT WORKSPACE", title: "Crop plan overview", description: "A clear view of buyer demand, member commitments, and the season ahead." },
   demand: { label: "STEP 01 · BUYER REQUEST", title: "Record buyer demand", description: "Enter the buyer’s written order separately from additional forecast interest. These numbers drive the crop plan." },
@@ -19,6 +19,7 @@ const pageTitles: Record<View, { label: string; title: string; description: stri
   farmers: { label: "STEP 03 · FARMER CHOICE", title: "Farmer participation", description: "Share each recommendation and track replies. Every farmer can accept, decline, or ask for a call." },
   guidance: { label: "STEP 04 · IN-SEASON SUPPORT", title: "WhatsApp guidance", description: "Send a few timely crop and buyer-quality reminders in the farmer’s chosen language." },
   results: { label: "STEP 05 · CLOSE THE LOOP", title: "Harvest & sale results", description: "Record what was harvested, accepted, sold, and learned for the next plan." },
+  shipments: { label: "FPO LOGISTICS", title: "Follow produce to the buyer", description: "See how a planned harvest moves from member farms through your collection centre and export route." },
   "farmer-home": { label: "FARMER SPACE", title: "Your season at a glance", description: "A simple view of your crop plan, next steps, and the support available from your FPO." },
   "farmer-plan": { label: "YOUR CROP PLAN", title: "Your participation plan", description: "Review the crop, area and buyer quality needs shared by your FPO." },
   "farmer-guidance": { label: "FIELD SUPPORT", title: "Season guidance", description: "A few timely reminders from your FPO for this crop season." },
@@ -35,7 +36,7 @@ const initialFarmers: Farmer[] = [
 const navGroups = [
   { title: "PLAN THE SEASON", items: [{ id: "overview" as const, name: "Overview", icon: Sprout }, { id: "demand" as const, name: "Buyer demand", icon: ClipboardCheck }, { id: "plan" as const, name: "Crop allocation", icon: Wheat }] },
   { title: "WORK WITH MEMBERS", items: [{ id: "farmers" as const, name: "Farmer responses", icon: Users }, { id: "guidance" as const, name: "WhatsApp guidance", icon: MessageCircle }] },
-  { title: "LEARN FROM THE SEASON", items: [{ id: "results" as const, name: "Harvest & sale results", icon: TrendingUp }] },
+  { title: "LEARN FROM THE SEASON", items: [{ id: "results" as const, name: "Harvest & sale results", icon: TrendingUp }, { id: "shipments" as const, name: "Shipment tracking", icon: Truck }] },
 ];
 
 function readSaved<T>(key: string, fallback: T): T {
@@ -187,6 +188,8 @@ export default function CropPlanningApp({ initialView = "overview" }: { initialV
 
         {view === "guidance" && <div className="cp-guidance-page"><div className="cp-guidance-toolbar"><div className="cp-guidance-crop"><span><Sprout size={16} /></span><div><b>{demand.crop} · {demand.variety}</b><small>Chittoor district · Rabi 2026–27 crop calendar</small></div></div><label>Farmer language <span className="cp-readonly-field">Telugu · translation pending</span></label></div><div className="cp-guidance-grid"><section className="cp-panel cp-calendar"><PanelHead label="FEW, TIMELY MESSAGES · ENGLISH DRAFT" title="Season message calendar" detail="Draft copy for Telugu farmer messages. Translate and have a qualified local agronomy partner review it before sending." /><div className="cp-timeline">{[{ date: "18 JAN", phase: "Pre-flowering · 2 weeks before expected bloom", title: "Check field moisture", body: "Inspect soil moisture before irrigation. Share any unusual leaf or pest symptoms with your FPO field coordinator.", buyer: "Planning reminder · no buyer commitment" }, { date: "02 FEB", phase: "Fruit set · after flowering", title: "Keep a simple field record", body: "Note fruit set and any visible damage during your regular field check. Contact the FPO before making a major crop-care change.", buyer: "FPO-reviewed agronomy message" }, { date: "01 MAR", phase: "Pre-harvest · 9 days before collection window", title: "Prepare for the buyer’s quality check", body: "The buyer requested firm, uniform fruit and a residue report. Confirm the harvest window and documentation with the FPO before picking.", buyer: "Buyer specification · Grade A · residue report" }].map((item, index) => <article className="cp-timeline-item" key={item.date}><div className="cp-timeline-mark"><i /><span>{index + 1}</span></div><div className="cp-message-card"><div className="cp-message-meta"><b>{item.date}</b><span>{item.phase}</span><label><input type="checkbox" defaultChecked={index !== 1} /> Include</label></div><h3>{item.title}</h3><p>{item.body}</p><small><MessageCircle size={12} /> {item.buyer}</small></div></article>)}</div><div className="cp-form-footer"><span><ShieldCheck size={15} /> Agronomy partner review needed before sending.</span><button className="cp-primary" onClick={() => { setScheduled(true); setNotice("Three selected crop reminders added to the pilot calendar."); }}>{scheduled ? <><Check size={14} /> Calendar saved</> : <><CalendarDays size={14} /> Save message calendar</>}</button></div></section><aside className="cp-side-column"><section className="cp-panel cp-side-info"><span className="cp-side-icon warm"><ShieldCheck size={18} /></span><h3>Review before sending</h3><p>Automated agronomic recommendations are outside this pilot. Have a qualified local partner review crop-care text, timings, and translations first.</p><div className="cp-review-stamp">DRAFT · NEEDS AGRONOMY REVIEW</div></section><div className="cp-wa-mini"><span className="cp-eyebrow">MESSAGE CHECK</span><b>Short, specific, and useful.</b><p>Include one action, the reason it matters, and a way to ask the FPO for help.</p><button onClick={() => setNotice("Farmer help channel: call the FPO field coordinator. Opt-out: reply STOP.")}>View help & opt-out text</button></div></aside></div></div>}
 
+        {view === "shipments" && <ShipmentTrackingView />}
+
         {view === "results" && <div className="cp-page-grid"><div className="cp-main-column"><section className="cp-panel"><PanelHead label="POST-HARVEST · FPO ENTRY" title="What actually happened?" detail="Capture the delivered outcome and buyer feedback without asking farmers to duplicate records already held by the FPO." /><form className="cp-outcome-form" onSubmit={saveOutcomes}><div className="cp-outcome-context"><span><Wheat size={16} /> {demand.crop} · {demand.variety}</span><span><CalendarDays size={15} /> Delivery window · {demand.window}</span><span><ClipboardCheck size={15} /> Confirmed order · {demand.confirmed} t</span></div><div className="cp-form-grid"><label>Actual harvested volume<span className="cp-input-suffix"><input type="number" min="0" step="0.1" value={yieldActual} onChange={(event) => setYieldActual(Number(event.target.value))} /><i>tonnes</i></span></label><label>Buyer accepted at requested grade<span className="cp-input-suffix"><input type="number" min="0" step="0.1" value={acceptedGrade} onChange={(event) => setAcceptedGrade(Number(event.target.value))} /><i>tonnes</i></span></label><label>Realized average price<span className="cp-input-suffix"><input type="number" min="0" step="1" value={priceActual} onChange={(event) => setPriceActual(Number(event.target.value))} /><i>₹ / kg</i></span></label><label>Rejection / downgrade reason<select value={downgradeReason} onChange={(event) => setDowngradeReason(event.target.value)}><option>Size variation</option><option>Late harvest</option><option>Visible damage</option><option>Residue report missing</option><option>No downgrade</option><option>Other</option></select></label><label className="cp-span-2">Buyer feedback<textarea rows={3} value={buyerFeedback} onChange={(event) => setBuyerFeedback(event.target.value)} /></label></div><div className="cp-form-footer"><span><Save size={15} /> {outcomesSaved ? "Saved locally · edits can be updated" : "Demo data · replace with this season’s actuals"}</span><button type="submit" className="cp-primary"><Check size={14} /> Save season results</button></div></form></section>
             <section className="cp-panel"><PanelHead label="LEARNING SIGNALS" title="Compare the plan with the result" detail="These pilot indicators show how to evaluate the workflow against your previous-season baseline." /><div className="cp-outcome-metrics"><Metric label="Planned supply from opted-in area" value={`${committedVolume.toFixed(1)} t`} foot="Planning estimate · buffered" /><Metric label="Actual harvested" value={`${yieldActual.toFixed(1)} t`} foot={`${(yieldActual - committedVolume).toFixed(1)} t vs planned`} /><Metric label="Accepted at requested grade" value={`${acceptedGrade.toFixed(1)} t`} foot={`${yieldActual ? Math.round(acceptedGrade / yieldActual * 100) : 0}% of harvested`} /><Metric label="Realized average price" value={`${money(priceActual * 1000)} / t`} foot="FPO-entered actual" /></div></section></div><aside className="cp-side-column"><section className="cp-panel cp-side-info"><span className="cp-side-icon"><TrendingUp size={18} /></span><h3>Measure the pilot</h3><p>Compare these outcomes with a suitable baseline, such as last season’s supply records for the same crop and delivery window.</p><ul className="cp-measure-list"><li>Plan coverage by farmer and area</li><li>Response and follow-up rates</li><li>Volume accuracy by delivery window</li><li>Buyer grade acceptance and reasons for downgrade</li><li>FPO time spent coordinating records</li></ul></section><section className="cp-side-info cp-muted-info"><b>Income claims need care</b><span>Compare farmer net return only when input and selling-cost data are reliable.</span></section></aside></div>}
       </div>
@@ -287,4 +290,56 @@ function FarmMapClickCapture({ active, onPoint }: { active: boolean; onPoint: (p
     return () => { map.off("click", handleClick); canvas.style.cursor = ""; };
   }, [map, active, onPoint]);
   return null;
+}
+
+const pilotShipments = [
+  { id: "HL-2408", crop: "Tomato · Arka Rakshak", farmer: "Puthalapattu member farms", quantity: "2.4 tonnes", status: "At collection centre", eta: "10 Mar 2027", progress: 0.01, stage: 1, position: [79.10, 13.20], carrier: "FPO-arranged truck · AP 03" },
+  { id: "HL-2396", crop: "Mango · Banganapalle", farmer: "Chittoor member farms", quantity: "1.8 tonnes", status: "In transit", eta: "28 Nov 2026", progress: 0.62, stage: 2, position: [91.4, 7.2], carrier: "Coastal Star · booking demo" },
+  { id: "HL-2382", crop: "Tomato · Arka Rakshak", farmer: "Gurramkonda member farms", quantity: "1.1 tonnes", status: "Quality review", eta: "11 Mar 2027", progress: 0.01, stage: 1, position: [79.10, 13.20], carrier: "Awaiting packhouse release" },
+];
+
+const exportRoute: [number, number][] = [[78.98, 13.18], [79.10, 13.20], [79.72, 13.17], [80.27, 13.08], [81.7, 11.2], [84.6, 9.6], [88.4, 8.2], [92.5, 6.8], [96.2, 5.2], [99.8, 3.5], [103.82, 1.27]];
+
+function ShipmentTrackingView() {
+  const [selected, setSelected] = useState(0);
+  const shipment = pilotShipments[selected];
+  const stages = ["Farm pickup", "FPO collection", "Export hand-off", "Buyer delivery"];
+  return <div className="cp-shipment-page">
+    <div className="cp-shipment-summary">
+      <div><span><Truck size={17} /></span><div><small>Shipment</small><b>{shipment.id} · {shipment.quantity}</b></div></div>
+      <div><span><PackageCheck size={17} /></span><div><small>Next hand-off</small><b>Kaveri FPO collection centre</b></div></div>
+      <div><span><Globe2 size={17} /></span><div><small>Delivery route</small><b>Chittoor → Chennai → Singapore</b></div></div>
+    </div>
+    <section className="cp-shipment-layout">
+      <div className="cp-shipment-list">
+        <label>Season shipments<select aria-label="Shipment status" defaultValue="all"><option value="all">All shipments · 3</option><option value="active">Active this season</option></select></label>
+        {pilotShipments.map((item, index) => <button key={item.id} className={`cp-shipment-card ${selected === index ? "selected" : ""}`} onClick={() => setSelected(index)}>
+          <span className="cp-shipment-card-top"><small>{item.id}</small><b>{item.status}</b></span>
+          <strong>{item.crop}</strong>
+          <span>{item.farmer}</span>
+          <span className="cp-shipment-card-bottom"><span>{item.quantity}</span><span>ETA {item.eta}</span></span>
+        </button>)}
+      </div>
+      <div className="cp-shipment-map-column">
+        <div className="cp-shipment-map-head"><div><span className="cp-eyebrow">SELECTED SHIPMENT · {shipment.id}</span><h2>{shipment.crop}</h2><p>{shipment.quantity} · {shipment.farmer}</p></div><span className="cp-shipment-state"><i />{shipment.status}</span></div>
+        <div className="cp-shipment-map-frame"><MapCN theme="light" viewport={{ center: [91.2, 7.2], zoom: 3.1 }} className="cp-shipment-map">
+          <MapRoute coordinates={exportRoute} progress={shipment.progress} color="#a9bba7" width={4} opacity={0.85} activeColor="#3d8a62" activeWidth={5} activeOpacity={1}>
+            <RouteProgress color="#3d8a62" width={5} opacity={1} />
+            <RouteMarker at="start"><MarkerContent><span className="cp-shipment-origin">IN</span></MarkerContent><MarkerTooltip>Member farm · {shipment.farmer}</MarkerTooltip></RouteMarker>
+            <RouteMarker at="end"><MarkerContent><span className="cp-shipment-destination">SG</span></MarkerContent><MarkerTooltip>Buyer destination · Singapore</MarkerTooltip></RouteMarker>
+          </MapRoute>
+          <MapMarker longitude={79.10} latitude={13.20}><MarkerContent><span className="cp-shipment-fpo-pin"><PackageCheck size={16} /></span></MarkerContent><MarkerTooltip><span className="cp-shipment-map-label"><b>Kaveri FPO Collection Centre</b><small>Chittoor · aggregation, grading & packing</small></span></MarkerTooltip></MapMarker>
+          <MapMarker longitude={shipment.position[0]} latitude={shipment.position[1]}><MarkerContent><span className="cp-shipment-truck-pin"><Truck size={13} /></span></MarkerContent><MarkerTooltip>Latest demo position · {shipment.status}</MarkerTooltip></MapMarker>
+          <MapMarker longitude={80.27} latitude={13.08}><MarkerContent><span className="cp-shipment-port-pin">C</span></MarkerContent><MarkerTooltip>Chennai export port · hand-off</MarkerTooltip></MapMarker>
+          <MapControls position="top-right" />
+        </MapCN>
+          <div className="cp-shipment-map-legend"><span><i /> Member farms</span><span><i className="fpo-key" /> FPO collection centre</span><span><i className="port-key" /> Export port</span></div>
+          <div className="cp-shipment-map-note"><span><PackageCheck size={16} /></span><div><b>Kaveri FPO Collection Centre</b><small>Chittoor · collection, grading & packing</small></div></div>
+        </div>
+        <div className="cp-shipment-route-summary"><span><MapPin size={14} /> Chittoor farms</span><span><ArrowRight size={14} /> Kaveri FPO centre · Chennai port · Singapore</span><span><CalendarDays size={14} /> Est. arrival · {shipment.eta}</span></div>
+        <div className="cp-shipment-timeline">{stages.map((stage, index) => <div key={stage} className={index < shipment.stage ? "done" : index === shipment.stage ? "current" : ""}><i>{index < shipment.stage ? <Check size={13} /> : index + 1}</i><b>{stage}</b><small>{index === 1 ? "Kaveri FPO · Chittoor" : index === 2 ? "Chennai port" : index === 3 ? `ETA ${shipment.eta}` : "Member village"}</small></div>)}</div>
+        <div className="cp-shipment-route-summary"><span><Truck size={14} /> {shipment.carrier}</span><span><CheckCircle2 size={14} /> Demo tracking data · position is illustrative</span></div>
+      </div>
+    </section>
+  </div>;
 }
