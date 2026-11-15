@@ -1,2 +1,5 @@
-import CachedHarvestLink from "../cached-harvestlink";
-export default function DemandPage() { return <CachedHarvestLink initialView="demand" />; }
+import { redirect } from "next/navigation";
+
+export default function DemandPage() {
+  redirect("/contracts");
+}
