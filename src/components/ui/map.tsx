@@ -395,6 +395,42 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     };
   }, []);
 
+  // Maps can mount inside dashboard panels that are initially below the fold
+  // or change size after fonts/layout settle. MapLibre does not always repaint
+  // tiles after those transitions, so explicitly resize and repaint when the
+  // container becomes measurable/visible.
+  useEffect(() => {
+    if (!mapInstance || !containerRef.current) return;
+    const container = containerRef.current;
+    let frame = 0;
+    const refresh = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (!container.isConnected) return;
+        const { width, height } = container.getBoundingClientRect();
+        if (width > 0 && height > 0) {
+          mapInstance.resize();
+          mapInstance.triggerRepaint();
+        }
+      });
+    };
+    const resizeObserver = new ResizeObserver(refresh);
+    resizeObserver.observe(container);
+    const intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) refresh();
+      },
+      { rootMargin: "160px" },
+    );
+    intersectionObserver.observe(container);
+    refresh();
+    return () => {
+      cancelAnimationFrame(frame);
+      resizeObserver.disconnect();
+      intersectionObserver.disconnect();
+    };
+  }, [mapInstance]);
+
   // Sync controlled viewport to map
   useEffect(() => {
     if (!mapInstance || !isControlled || !viewport) return;
