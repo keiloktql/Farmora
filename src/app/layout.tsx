@@ -16,10 +16,10 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "HarvestLink",
-    template: "%s · HarvestLink",
+    default: "Farmora",
+    template: "%s · Farmora",
   },
-  description: "FPO deal, crop and supply-chain workspace: contracts, farmers, allocation, buyers and shipments.",
+  description: "FPO workspace: exporter deals, weather-aware farmer selection and supply planning.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

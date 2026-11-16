@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useId, useMemo, useReducer, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 /**
- * Small runtime for the HarvestLink page components.
+ * Small runtime for the Farmora page components.
  *
  * Each page keeps its view logic in a `Logic` class (state, `setState`,
  * lifecycle methods and a `renderVals()` that returns everything the markup
@@ -101,6 +101,15 @@ function Fit({ children }: { children: ReactNode }) {
   );
 }
 
+/** Wrap page CSS in @scope (keyframes stay global; `body` rules are dropped since Fit paints the background). */
+function scopeCss(input: string, cls: string): string {
+  const keyframes: string[] = [];
+  const rest = input
+    .replace(/@keyframes[^{]+\{(?:[^{}]*\{[^{}]*\})*\s*\}/g, (m) => { keyframes.push(m); return ""; })
+    .replace(/(^|\n)\s*body\s*\{[^}]*\}/g, "$1");
+  return `${keyframes.join("\n")}\n@scope (.${cls}) {\n${rest}\n}`;
+}
+
 export function DC({
   Logic,
   css: pageCss,
@@ -122,11 +131,15 @@ export function DC({
     };
   }, [instance]);
 
+  // Next keeps pages you navigated away from mounted (hidden), so their <style> tags stay in the document.
+  // Scope each page's CSS to its own root so class names like .panel or .fld can't leak between pages.
+  const scope = "dc-" + useId().replace(/[^a-zA-Z0-9]/g, "");
+  const scoped = useMemo(() => scopeCss(pageCss, scope), [pageCss, scope]);
   const v = instance.renderVals() as Record<string, never>;
   return (
     <Fit>
-      <style>{pageCss}</style>
-      {render(v)}
+      <style>{scoped}</style>
+      <div className={scope} style={{ display: "contents" }}>{render(v)}</div>
     </Fit>
   );
 }

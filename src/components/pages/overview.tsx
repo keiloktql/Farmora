@@ -1,11 +1,15 @@
 // @ts-nocheck
 /* eslint-disable */
-// Generated from the approved "HarvestLink 3D Simulation UI" design (Main.dc.html).
+// Based on the approved "HarvestLink 3D Simulation UI" design (Main.dc.html), reorganised as a SaaS-style overview:
+// KPI strip on top, deals and deliveries on the left, the 3D season map in the middle, and a detailed state panel
+// plus a ranked weather-risk list on the right. Deals, deliveries, pipeline value and value at risk are live
+// (GET /api/portfolio); revenue and the weather panels are sample values until those feeds exist.
 'use client';
 
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { DC, DCLogic, css } from '@/lib/dc';
+import { ProBadge } from '@/components/ui/pro-badge';
 
 export const pageTitle = "Overview";
 
@@ -14,13 +18,23 @@ body{margin:0;background:#0b1b16}
 button{font-family:inherit;cursor:pointer}
 a{text-decoration:none}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #DCE96C;outline-offset:2px}
-.panel{position:absolute;box-sizing:border-box;padding:18px;border-radius:20px;background:#0f261ed9;border:1px solid #2c4a3d;backdrop-filter:blur(14px)}
-.kick{font-size:12px;letter-spacing:1.2px;font-weight:600;color:#DCE96C}
+.card{position:absolute;box-sizing:border-box;border-radius:18px;background:#0f261ee6;border:1px solid #23443a;backdrop-filter:blur(14px);box-shadow:0 18px 40px #00000040}
+.kick{font-size:11px;letter-spacing:1.3px;font-weight:600;color:#8FB7A0;text-transform:uppercase}
 .hd{font-family:var(--font-space),sans-serif;font-weight:600;letter-spacing:-.4px}
-.stat{padding:10px;border-radius:12px;background:#143026}
-.stat span{display:block;font-size:12px;color:#A9C0B2}
-.stat b{display:block;font-family:var(--font-space),sans-serif;font-size:20px;font-weight:600;margin-top:2px}
-.note{font-size:12px;line-height:1.5;color:#A9C0B2}
+.num{font-family:var(--font-space),sans-serif;font-weight:700;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.muted{color:#93AE9F}
+.note{font-size:11.5px;line-height:1.5;color:#86A394}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.up{background:#1f4a33;color:#8BE3A6}
+.warn{background:#4a2320;color:#FFC2B6}
+.mini{padding:8px 9px;border-radius:12px;background:#132e25;border:1px solid #1f3d33}
+.mini span{display:block;font-size:11px;color:#8FB7A0;white-space:nowrap}
+.mini b{display:block;font-family:var(--font-space),sans-serif;font-size:17px;font-weight:600;margin-top:1px}
+.row{display:flex;align-items:center;gap:10px}
+.sec{display:flex;justify-content:space-between;align-items:baseline}
+.link{font-size:12px;font-weight:600;color:#DCE96C}
+.riskrow{display:flex;align-items:center;gap:8px;width:100%;min-height:30px;padding:4px 8px;white-space:nowrap;border-radius:10px;border:1px solid transparent;background:transparent;color:#E8F1EA;text-align:left;font-size:12.5px}
+.riskrow:hover{background:#143026}
 .tag{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#E8F1EA;box-shadow:0 6px 16px #00000066;font-family:var(--font-inter),sans-serif;pointer-events:none}
 .lyr{position:absolute;overflow:visible;pointer-events:none;transition:transform .25s ease}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -29,7 +43,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #DCE9
 @keyframes flash{0%,88%,100%{filter:brightness(1)}91%,95%{filter:brightness(2.4)}}
 @keyframes drift{to{transform:translateX(24px)}}
 @keyframes riskpulse{50%{stroke-opacity:.3}}
+@keyframes livedot{50%{opacity:.35}}
 .risk{animation:riskpulse 1.4s ease-in-out infinite}
+.live{animation:livedot 1.6s ease-in-out infinite}
 .wx{position:absolute;width:120px;height:110px;pointer-events:none}
 .wx::before,.wx::after{content:'';position:absolute}
 .wx-sun::before{left:30px;top:22px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,#FFF2A8 0 38%,#FFC24A 39% 100%);box-shadow:0 0 44px #FFC24Acc}
@@ -43,7 +59,12 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #DCE9
 `;
 
 class Logic extends DCLogic {
-  state = { hov: null, sel: 'TN', prof: false };
+  state = { hov: null, sel: 'TN', prof: false, book: null };
+  async componentDidMount() {
+    if (this._started) return;
+    this._started = true;
+    try { const r = await fetch('/api/portfolio'); if (r.ok) this.setState({ book: await r.json() }); } catch (e) { /* keep placeholders */ }
+  }
   geo() {
     if (this._g) return this._g;
     const W = 540, H = 610;
@@ -93,14 +114,30 @@ class Logic extends DCLogic {
       OD: ['cloud', 27, 'Harvest', 'Kharif paddy harvest'], ML: ['rain', 20, 'Harvest', 'Potato and paddy'], MN: ['sun', 22, 'Harvest', 'Paddy harvest'], GA: ['sun', 31, 'Harvest', 'Paddy harvest'],
       KA: ['cloud', 27, 'Growing', 'Ragi and vegetables growing'], TN: ['rain', 27, 'Sowing', 'Samba paddy and vegetable sowing'], TR: ['cloud', 25, 'Harvest', 'Paddy harvest'], MZ: ['cloud', 21, 'Harvest', 'Paddy harvest'], KL: ['rain', 28, 'Growing', 'Spices and banana growing']
     };
+    // Sample state context: region, main crops this season, season rainfall vs normal (%).
+    const X = {
+      JK: ['North', ['Apple', 'Saffron'], -12], HP: ['North', ['Apple', 'Peas'], -8], PB: ['North', ['Wheat', 'Mustard'], -5], UK: ['North', ['Wheat', 'Rice'], -3],
+      HR: ['North', ['Wheat', 'Mustard'], -6], RJ: ['West', ['Mustard', 'Gram'], -15], UP: ['North', ['Wheat', 'Sugarcane'], 2], BR: ['East', ['Paddy', 'Maize'], 6],
+      SK: ['Northeast', ['Cardamom', 'Ginger'], 4], AR: ['Northeast', ['Millet', 'Paddy'], 10], NL: ['Northeast', ['Paddy', 'Maize'], 7], MN: ['Northeast', ['Paddy', 'Pulses'], 5],
+      MZ: ['Northeast', ['Paddy', 'Ginger'], 3], TR: ['Northeast', ['Paddy', 'Pineapple'], 8], ML: ['Northeast', ['Potato', 'Paddy'], 12], AS: ['Northeast', ['Paddy', 'Tea'], 22],
+      WB: ['East', ['Paddy', 'Potato'], 9], JH: ['East', ['Paddy', 'Pulses'], -4], OD: ['East', ['Paddy', 'Pulses'], 14], CG: ['Central', ['Paddy', 'Gram'], -2],
+      MP: ['Central', ['Wheat', 'Gram'], -7], GJ: ['West', ['Cumin', 'Groundnut'], -11], MH: ['West', ['Jowar', 'Onion'], -4], TG: ['South', ['Cotton', 'Chilli'], 5],
+      AP: ['South', ['Tomato', 'Chilli', 'Groundnut'], 18], KA: ['South', ['Ragi', 'Tomato'], 3], GA: ['West', ['Paddy', 'Cashew'], 6], TN: ['South', ['Paddy', 'Banana'], 24], KL: ['South', ['Banana', 'Spices'], 11]
+    };
     const risks = {
-      TN: { kind: 'Cyclone', pct: 90, eta: 'in 14 days', impact: 'Could disrupt Chennai port and the Chittoor to Chennai road leg for the LionCity shipment window.' },
-      OD: { kind: 'Cyclone', pct: 40, eta: 'in 20 days', impact: 'Could delay paddy harvest and Paradip port loading.' },
-      PB: { kind: 'Dense fog and cold wave', pct: 65, eta: 'in 6 days', impact: 'Slower trucking on highways; wheat germination watch.' },
-      AS: { kind: 'Flood', pct: 55, eta: 'in 9 days', impact: 'Possible harvest losses and road closures.' },
-      AP: { kind: 'Heavy rain', pct: 50, eta: 'in 10 days', impact: 'Could affect Chittoor tomato picking and drying.' }
+      TN: { kind: 'Cyclone', pct: 90, eta: 'in 14 days', impact: 'Could disrupt Chennai port and the Chittoor to Chennai road leg for the LionCity shipment window.', action: 'Book a backup sailing or move the truck leg earlier.' },
+      OD: { kind: 'Cyclone', pct: 40, eta: 'in 20 days', impact: 'Could delay paddy harvest and Paradip port loading.', action: 'No deals exposed. Keep monitoring.' },
+      PB: { kind: 'Dense fog and cold wave', pct: 65, eta: 'in 6 days', impact: 'Slower trucking on highways; wheat germination watch.', action: 'No deals exposed. Keep monitoring.' },
+      AS: { kind: 'Flood', pct: 55, eta: 'in 9 days', impact: 'Possible harvest losses and road closures.', action: 'No deals exposed. Keep monitoring.' },
+      AP: { kind: 'Heavy rain', pct: 50, eta: 'in 10 days', impact: 'Could affect Chittoor tomato picking and drying.', action: 'Pick and dry tomatoes before the rain; clear drains in Chittoor plots.' }
+    };
+    // Where your own business touches a state.
+    const exposure = {
+      AP: ['Home base · Chittoor Farmers FPO, 42 member farms', 'All 3 active deals source here · 50 t (Chittoor, Anantapur, Kurnool)'],
+      TN: ['Chennai port · export leg for LionCity 18 t']
     };
     const wxLabel = { sun: 'Sunny', rain: 'Rainy', storm: 'Stormy', cloud: 'Cloudy', fog: 'Foggy' };
+    const humid = { sun: 45, rain: 86, storm: 88, cloud: 68, fog: 92 };
     const wxTop = { sun: '#7a6320', rain: '#1f4a6b', storm: '#3b3f66', cloud: '#33505a', fog: '#4a5a58' };
     const wxChip = { sun: '#8a6e1d', rain: '#1f5c85', storm: '#4b4f84', cloud: '#3d6070', fog: '#586c69' };
     const stageC = { Sowing: '#DCE96C', Growing: '#6FD08C', Harvest: '#F5B83D', Fallow: '#7d8d84' };
@@ -116,31 +153,164 @@ class Logic extends DCLogic {
         enter: () => this.setState({ hov: g.a }), leave: () => this.setState({ hov: null }), pick: () => this.setState({ sel: g.a }) });
       if (g.w > 14 || g.h > 14) tags.push({ x: g.cx, y: g.cy, z: lift + 4, name: g.a, dot: stageC[st], border: risk ? '#D9604C' : '#2c4a3d', bg: '#0f261ee6' });
     });
-    const A = G.find((g) => g.a === active), AD = D[active];
+    const A = G.find((g) => g.a === active), AD = D[active], AX = X[active];
     const fx = [{ x: A.cx, y: A.cy, z: 60, cls: 'wx-' + AD[0] }];
     const rk = risks[active];
-    const nav = [['Overview', '/'], ['Contracts', '/contracts'], ['New project', '/new-project'], ['Farmer DB', '/farmers'], ['Allocation', '/allocation'], ['Buyers', '/buyers'], ['Results', '/results'], ['Shipments', '/shipments']]
+    const nav = [['Overview', '/'], ['Contracts', '/contracts'], ['Farmer DB', '/farmers'], ['Buyers', '/buyers'], ['Progress', '/progress'], ['WhatsApp', '/whatsapp']]
       .map((n) => { const on = n[0] === 'Overview'; return { name: n[0], href: n[1], bg: on ? '#DCE96C' : 'transparent', fg: on ? '#14382b' : '#B9CDC0', fw: on ? 600 : 500 }; });
-    const bars = [['Jun', 3.2], ['Jul', 4.8], ['Aug', 6.1], ['Sep', 5.4], ['Oct', 8.3], ['Nov', 10.8]].map((b, i) => ({ m: b[0], v: b[1], h: Math.round(b[1] / 10.8 * 120), bg: i === 5 ? 'linear-gradient(#DCE96C,#6FD08C)' : '#3f9a5c' }));
+    const bars = [['Jun', 3.2], ['Jul', 4.8], ['Aug', 6.1], ['Sep', 5.4], ['Oct', 8.3], ['Nov', 10.8]].map((b, i) => ({ m: b[0], v: b[1], h: Math.round(b[1] / 10.8 * 46), bg: i === 5 ? 'linear-gradient(#DCE96C,#6FD08C)' : '#2f7a4c' }));
+    // Deals, deliveries and money come from the live contracts book (GET /api/portfolio).
+    const B = this.state.book;
+    const inr = (x) => (x >= 1e7 ? '₹' + (x / 1e7).toFixed(2) + ' Cr' : '₹' + (x / 1e5).toFixed(1) + ' L');
+    const fmt = (d) => { const p = d.split('-'); return Number(p[2]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(p[1]) - 1] + ' ' + p[0]; };
+    const live = B ? B.timeline.slice().sort((a, b) => a.end.localeCompare(b.end)) : [];
+    const deals = live.slice(0, 3).map((t) => ({ ex: t.exporter, crop: t.produce + ' · ' + t.qtyT + ' t · ' + t.country, value: t.valueINR != null ? inr(t.valueINR) : 'Price TBD', due: fmt(t.end), prog: t.progress, stage: t.status, href: '/contracts?id=' + t.id }));
+    const upcoming = live.filter((t) => t.daysToDelivery >= 0);
+    const deliveries = upcoming.slice(0, 3).map((t) => ({ days: t.daysToDelivery, what: t.produce + ' ' + t.qtyT + ' t · ' + t.exporter, when: fmt(t.end) + ' · ' + t.country }));
+    const K = B ? B.kpis : null;
+    const sevC = (p) => (p >= 75 ? '#E5654F' : p >= 50 ? '#F0A04B' : '#D8C25A');
+    const riskList = Object.keys(risks).map((k) => ({ k, ...risks[k] })).sort((a, b) => b.pct - a.pct).map((r) => ({
+      name: (G.find((g) => g.a === r.k) || {}).name || r.k, kind: r.kind, pct: r.pct, eta: r.eta, color: sevC(r.pct), mine: !!exposure[r.k],
+      on: r.k === active, pick: () => this.setState({ sel: r.k })
+    }));
+    const exposed = Object.keys(risks).filter((k) => exposure[k]).length;
+    const dealCount = { AP: '3 deals', TN: '1 route' };
+    const rain = AX[2];
     return {
-      states, tags, fx, nav, bars,
-      deals: [
-        { ex: 'LionCity Fresh Imports', crop: 'Tomato · 18 t · Singapore', value: '₹4.3 L', due: '10–20 Mar 2027', prog: 62, stage: 'Plots growing' },
-        { ex: 'Spice Route Exporters', crop: 'Chilli · 12 t · sample', value: '₹11.4 L', due: '5 Apr 2027', prog: 35, stage: 'Farmers being matched' },
-        { ex: 'Coastal Retail Co.', crop: 'Groundnut · 20 t · sample', value: '₹12.0 L', due: '28 Feb 2027', prog: 80, stage: 'Harvest in progress' }
+      states, tags, fx, nav, bars, deals, deliveries, riskList,
+      dealsHead: K ? K.deals + ' · ' + inr(K.valueINR) : '…', delivHead: upcoming.length ? 'next ' + upcoming[Math.min(2, upcoming.length - 1)].daysToDelivery + ' days' : '',
+      kpis: [
+        { label: 'Pipeline value', value: K ? inr(K.valueINR) : '…', sub: K ? 'Across ' + K.deals + ' live deals · ' + K.volumeT + ' t' : 'Loading deals', pill: null },
+        { label: 'Value at risk', value: K ? inr(K.valueAtRisk) : '…', sub: 'Weather risk on allocated deals', pill: B && B.stress.worst ? { text: 'Worst past season: ' + Math.round(B.stress.worst.delivered * 100) + '% supply', cls: B.stress.worst.delivered < .9 ? 'warn' : 'up' } : null },
+        { label: 'Next delivery', value: upcoming[0] ? upcoming[0].daysToDelivery + ' days' : '—', sub: upcoming[0] ? upcoming[0].produce + ' ' + upcoming[0].qtyT + ' t · ' + fmt(upcoming[0].end) : 'No upcoming deliveries', pill: null },
+        { label: 'Weather alerts', value: Object.keys(risks).length + ' states', sub: 'Next 3 weeks', pill: { text: exposed + ' affect your deals', cls: 'warn' } }
       ],
-      deliveries: [
-        { days: 104, what: 'Groundnut 20 t · Coastal Retail', when: '28 Feb 2027 · Anantapur' },
-        { days: 114, what: 'Tomato 18 t · LionCity Fresh Imports', when: '10–20 Mar 2027 · Chittoor' },
-        { days: 140, what: 'Chilli 12 t · Spice Route Exporters', when: '5 Apr 2027 · Kurnool' }
-      ],
-      stName: A.name, stTemp: AD[1], stStage: AD[2], stNote: AD[3], stageColor: stageC[AD[2]], wxLabel: wxLabel[AD[0]], wxBg: wxChip[AD[0]],
-      hasRisk: !!rk, noRisk: !rk, riskKind: rk ? rk.kind : '', riskPct: rk ? rk.pct : '', riskEta: rk ? rk.eta : '', riskImpact: rk ? rk.impact : '',
+      stName: A.name, stCode: active, stRegion: AX[0], stTemp: AD[1], stStage: AD[2], stNote: AD[3], stageColor: stageC[AD[2]], wxLabel: wxLabel[AD[0]], wxBg: wxChip[AD[0]],
+      stCrops: AX[1], stRain: (rain > 0 ? '+' : '') + rain + '%', stRainColor: rain >= 15 ? '#8fd0f5' : rain <= -10 ? '#F0A04B' : '#E8F1EA', stHumid: humid[AD[0]] + '%',
+      stMode: hov ? 'Hovering' : 'Selected', stDeals: dealCount[active] || 'None',
+      hasRisk: !!rk, noRisk: !rk, riskKind: rk ? rk.kind : '', riskPct: rk ? rk.pct : 0, riskEta: rk ? rk.eta : '', riskImpact: rk ? rk.impact : '', riskAction: rk ? rk.action : '', riskColor: rk ? sevC(rk.pct) : '#6FD08C',
+      exposure: exposure[active] || [], noExposure: !exposure[active],
       profOpen: prof, toggleProf: () => this.setState({ prof: !prof })
     };
   }
 }
 
+const Bar = ({ pct, color, h = 6 }) => (
+  <div style={{ height: h, borderRadius: 999, background: '#1c3a2f', overflow: 'hidden' }}><div style={{ height: '100%', width: pct + '%', background: color, borderRadius: 999 }} /></div>
+);
+
 export default function OverviewPage() {
-  return <DC Logic={Logic} css={CSS} render={(v) => (<div style={{"position":"relative","width":"1440px","height":"900px","overflow":"hidden","background":"radial-gradient(1000px 620px at 50% 52%,#1a3d30 0%,#0f261e 55%,#0a1814 100%)","fontFamily":"var(--font-inter),system-ui,sans-serif","color":"#E8F1EA"}}><div style={{"position":"absolute","left":"0","top":"0","width":"1440px","height":"900px","perspective":"2200px","perspectiveOrigin":"50% 30%"}}><div style={{"position":"absolute","left":"720px","top":"492px","width":"540px","height":"610px","marginLeft":"-270px","marginTop":"-305px","transformStyle":"preserve-3d","transform":"scale(1.02) rotateX(48deg)"}}>{v.states.map((s, $index) => (<Fragment key={$index}><svg className="lyr" width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} style={css(`left:${s.x}px;top:${s.y}px;transform:translateZ(0px)`)}><path d={s.d} fill={s.fBase} stroke="#0a1511" strokeWidth="1.2" strokeLinejoin="round" style={{"pointerEvents":"all","cursor":"pointer"}} onMouseEnter={s.enter} onMouseLeave={s.leave} onClick={s.pick} /></svg><svg className="lyr" width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} style={css(`left:${s.x}px;top:${s.y}px;transform:translateZ(${s.zMid}px)`)} aria-hidden="true"><path d={s.d} fill={s.fMid} stroke="#0a1511" strokeWidth="1" strokeLinejoin="round" /></svg><svg className="lyr" width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} style={css(`left:${s.x}px;top:${s.y}px;transform:translateZ(${s.zTop}px)`)} aria-hidden="true"><path className={s.cls} d={s.d} fill={s.fTop} stroke={s.stroke} strokeWidth={s.sw} strokeLinejoin="round" /></svg></Fragment>))}{v.tags.map((l, $index) => (<Fragment key={$index}><div style={css(`position:absolute;left:${l.x}px;top:${l.y}px;width:0;height:0;transform-style:preserve-3d;transform:translateZ(${l.z}px) rotateX(-48deg);pointer-events:none`)}><div className="tag" style={css(`border:1px solid ${l.border};background:${l.bg}`)}><span style={css(`width:7px;height:7px;border-radius:50%;background:${l.dot}`)} /><span>{l.name}</span></div></div></Fragment>))}{v.fx.map((w, $index) => (<Fragment key={$index}><div style={css(`position:absolute;left:${w.x}px;top:${w.y}px;width:0;height:0;transform-style:preserve-3d;transform:translateZ(${w.z}px) rotateX(-48deg);pointer-events:none`)}><div className={`wx ${w.cls}`} style={{"left":"-60px","top":"-110px"}} /></div></Fragment>))}</div></div><header style={{"position":"absolute","left":"0","top":"0","width":"1440px","height":"64px","boxSizing":"border-box","padding":"0 24px","display":"flex","alignItems":"center","gap":"16px","background":"linear-gradient(#0a1814ee,#0a181400)","zIndex":"5"}}><div style={{"display":"flex","alignItems":"center","gap":"10px"}}><div style={{"width":"34px","height":"34px","borderRadius":"11px","background":"#DCE96C","display":"grid","placeItems":"center","transform":"rotate(-6deg)"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14382b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 20h10M12 20v-9" /><path d="M12 11c0-3-2-5-5-5 0 3 2 5 5 5z" /><path d="M12 13c0-3 2-5 5-5 0 3-2 5-5 5z" /></svg></div><span className="hd" style={{"fontWeight":"700","fontSize":"18px"}}>HarvestLink</span></div><nav aria-label="Workspaces" style={{"display":"flex","gap":"2px","marginLeft":"12px","padding":"4px","borderRadius":"999px","background":"#12281f99","border":"1px solid #2c4a3d"}}>{v.nav.map((n, $index) => (<Fragment key={$index}><Link href={n.href} style={css(`padding:8px 14px;border-radius:999px;background:${n.bg};color:${n.fg};font-size:13px;font-weight:${n.fw}`)}>{n.name}</Link></Fragment>))}</nav><button onClick={v.toggleProf} aria-expanded={v.profOpen} style={{"marginLeft":"auto","display":"flex","alignItems":"center","gap":"10px","minHeight":"44px","padding":"0 12px 0 6px","borderRadius":"999px","border":"1px solid #2c4a3d","background":"#12281f99","color":"#E8F1EA","fontSize":"13px"}}><span style={{"width":"32px","height":"32px","borderRadius":"50%","background":"#E8BC7C","color":"#4a3420","display":"grid","placeItems":"center","fontWeight":"700","fontSize":"12px"}}>CF</span><span style={{"textAlign":"left"}}><b style={{"display":"block","fontWeight":"600"}}>Chittoor Farmers FPO</b><span style={{"display":"block","fontSize":"12px","color":"#A9C0B2"}}>Andhra Pradesh</span></span></button></header>{v.profOpen && (<><div style={{"position":"absolute","right":"24px","top":"70px","width":"300px","boxSizing":"border-box","padding":"18px","borderRadius":"20px","background":"#0f261ef5","border":"1px solid #3d6b55","zIndex":"6","display":"flex","flexDirection":"column","gap":"10px"}}><div style={{"display":"flex","alignItems":"center","gap":"12px"}}><span style={{"width":"52px","height":"52px","borderRadius":"50%","background":"#E8BC7C","color":"#4a3420","display":"grid","placeItems":"center","fontWeight":"700"}}>CF</span><div><div className="hd" style={{"fontSize":"18px"}}>Chittoor Farmers FPO</div><div className="note">Your FPO profile · sample</div></div></div><div style={{"display":"grid","gridTemplateColumns":"repeat(3,minmax(0,1fr))","gap":"8px"}}><div className="stat"><span>Members</span><b>42</b></div><div className="stat"><span>Since</span><b>2019</b></div><div className="stat"><span>Trust</span><b>4.6</b></div></div></div></>)}<aside className="panel" style={{"left":"24px","top":"84px","width":"360px","height":"792px","display":"flex","flexDirection":"column","gap":"12px"}}><div className="kick">OVERVIEW · RABI 2026–27</div><div style={{"display":"grid","gridTemplateColumns":"repeat(3,minmax(0,1fr))","gap":"8px"}}><div className="stat"><span>Active deals</span><b>3</b></div><div className="stat"><span>Long-term</span><b>4</b></div><div className="stat"><span>Revenue YTD</span><b>₹38.6 L</b></div></div><div className="hd" style={{"fontSize":"16px","marginTop":"4px"}}>Ongoing deals with exporters</div><div style={{"display":"flex","flexDirection":"column","gap":"8px"}}>{v.deals.map((d, $index) => (<Fragment key={$index}><div style={{"padding":"12px","borderRadius":"14px","background":"#143026"}}><div style={{"display":"flex","justifyContent":"space-between","gap":"8px","fontSize":"14px","fontWeight":"600"}}><span>{d.ex}</span><span>{d.value}</span></div><div style={{"fontSize":"12px","color":"#A9C0B2","marginTop":"2px"}}>{d.crop} · due {d.due}</div><div style={{"height":"8px","borderRadius":"999px","background":"#1c3a2f","marginTop":"10px","overflow":"hidden"}}><div style={css(`height:100%;width:${d.prog}%;background:linear-gradient(90deg,#4fbf72,#DCE96C)`)} /></div><div style={{"display":"flex","justifyContent":"space-between","fontSize":"12px","color":"#A9C0B2","marginTop":"6px"}}><span>{d.stage}</span><span>{d.prog}%</span></div></div></Fragment>))}</div><div className="hd" style={{"fontSize":"16px","marginTop":"4px"}}>Upcoming deliveries</div><ul style={{"listStyle":"none","margin":"0","padding":"0","display":"flex","flexDirection":"column","gap":"6px"}}>{v.deliveries.map((u, $index) => (<Fragment key={$index}><li style={{"display":"flex","alignItems":"center","gap":"12px","padding":"10px 12px","borderRadius":"12px","background":"#143026"}}><span style={{"minWidth":"52px","textAlign":"center","padding":"6px 0","borderRadius":"10px","background":"#1d3f31"}}><b className="hd" style={{"display":"block","fontSize":"18px","lineHeight":"1"}}>{u.days}</b><span style={{"fontSize":"12px","color":"#A9C0B2"}}>days</span></span><span style={{"flex":"1"}}><span style={{"display":"block","fontSize":"13px","fontWeight":"600"}}>{u.what}</span><span style={{"display":"block","fontSize":"12px","color":"#A9C0B2"}}>{u.when}</span></span></li></Fragment>))}</ul></aside><aside className="panel" style={{"left":"1056px","top":"84px","width":"360px","display":"flex","flexDirection":"column","gap":"10px"}}><div className="kick">STATE · HOVER THE MAP</div><div style={{"display":"flex","alignItems":"center","gap":"10px"}}><div className="hd" style={{"fontSize":"24px","flex":"1","lineHeight":"1.15"}}>{v.stName}</div><span style={css(`padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;background:${v.wxBg};color:#E8F1EA;white-space:nowrap`)}>{v.wxLabel} · {v.stTemp}°C</span></div><div style={{"display":"flex","alignItems":"center","gap":"10px","padding":"10px 12px","borderRadius":"12px","background":"#143026"}}><span style={css(`width:12px;height:12px;border-radius:3px;background:${v.stageColor};flex:none`)} /><span style={{"fontSize":"13px"}}><b style={{"fontWeight":"600"}}>{v.stStage} season</b>{" "}· {v.stNote}</span></div>{v.hasRisk && (<><div style={{"padding":"12px","borderRadius":"12px","background":"#4a2320","border":"1px solid #D9604C"}}><div style={{"display":"flex","justifyContent":"space-between","fontSize":"14px","fontWeight":"700","color":"#FFD3CB"}}><span>{v.riskKind} risk · {v.riskPct}%</span><span>{v.riskEta}</span></div><div style={{"fontSize":"12px","lineHeight":"1.5","color":"#F2C4BC","marginTop":"4px"}}>{v.riskImpact}</div></div></>)}{v.noRisk && (<><div style={{"padding":"12px","borderRadius":"12px","background":"#143026","fontSize":"13px","color":"#B9CDC0"}}>No weather risk predicted for this state in the next 3 weeks.</div></>)}<div className="note">Sample values. Weather comes from a live feed and risks from the predictive model once connected.</div></aside><aside className="panel" style={{"left":"1056px","top":"502px","width":"360px","height":"374px","display":"flex","flexDirection":"column","gap":"8px"}}><div style={{"display":"flex","justifyContent":"space-between","alignItems":"baseline"}}><span className="kick">REVENUE DASHBOARD</span><span className="note">₹ lakh · sample</span></div><div style={{"display":"flex","alignItems":"baseline","gap":"8px"}}><span className="hd" style={{"fontSize":"36px","fontWeight":"700"}}>₹38.6 L</span><span style={{"fontSize":"13px","color":"#6FD08C"}}>+30% vs last month</span></div><div style={{"display":"flex","alignItems":"flex-end","gap":"12px","height":"150px","paddingTop":"8px"}}>{v.bars.map((b, $index) => (<Fragment key={$index}><div style={{"flex":"1","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"flex-end","gap":"4px","height":"100%"}}><span style={{"fontSize":"12px","color":"#A9C0B2"}}>{b.v}</span><div style={css(`width:100%;height:${b.h}px;border-radius:8px 8px 3px 3px;background:${b.bg}`)} /></div></Fragment>))}</div><div style={{"display":"flex","gap":"12px"}}>{v.bars.map((b, $index) => (<Fragment key={$index}><span style={{"flex":"1","textAlign":"center","fontSize":"12px","color":"#A9C0B2"}}>{b.m}</span></Fragment>))}</div><div style={{"display":"grid","gridTemplateColumns":"repeat(2,minmax(0,1fr))","gap":"8px","marginTop":"4px"}}><div className="stat"><span>Pipeline value</span><b>₹27.7 L</b></div><div className="stat"><span>Long-term renewals</span><b>2 due</b></div></div></aside><div style={{"position":"absolute","left":"400px","top":"828px","width":"640px","boxSizing":"border-box","padding":"10px 16px","borderRadius":"999px","background":"#0f261ed9","border":"1px solid #2c4a3d","display":"flex","justifyContent":"center","gap":"14px","fontSize":"12px","color":"#B9CDC0","flexWrap":"wrap"}}><span style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"width":"10px","height":"10px","borderRadius":"50%","background":"#DCE96C"}} />Sowing</span><span style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"width":"10px","height":"10px","borderRadius":"50%","background":"#6FD08C"}} />Growing</span><span style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"width":"10px","height":"10px","borderRadius":"50%","background":"#F5B83D"}} />Harvest</span><span style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"width":"10px","height":"10px","borderRadius":"50%","background":"#7d8d84"}} />Fallow</span><span style={{"display":"flex","alignItems":"center","gap":"6px"}}><span style={{"width":"10px","height":"10px","borderRadius":"3px","border":"2px solid #D9604C"}} />Predicted risk</span><span>State borders are approximate</span></div></div>)} />;
+  return <DC Logic={Logic} css={CSS} render={(v) => (
+    <div style={{ position: 'relative', width: 1440, height: 900, overflow: 'hidden', background: 'radial-gradient(900px 600px at 50% 60%,#1a3d30 0%,#0f261e 55%,#0a1814 100%)', fontFamily: 'var(--font-inter),system-ui,sans-serif', color: '#E8F1EA' }}>
+
+      {/* 3D season map */}
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 1440, height: 900, perspective: '2200px', perspectiveOrigin: '50% 34%' }}>
+        <div style={{ position: 'absolute', left: 720, top: 548, width: 540, height: 610, marginLeft: -270, marginTop: -305, transformStyle: 'preserve-3d', transform: 'scale(.92) rotateX(48deg)' }}>
+          {v.states.map((s, i) => (<Fragment key={i}>
+            <svg className="lyr" width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} style={css(`left:${s.x}px;top:${s.y}px;transform:translateZ(0px)`)}><path d={s.d} fill={s.fBase} stroke="#0a1511" strokeWidth="1.2" strokeLinejoin="round" style={{ pointerEvents: 'all', cursor: 'pointer' }} onMouseEnter={s.enter} onMouseLeave={s.leave} onClick={s.pick} /></svg>
+            <svg className="lyr" width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} style={css(`left:${s.x}px;top:${s.y}px;transform:translateZ(${s.zMid}px)`)} aria-hidden="true"><path d={s.d} fill={s.fMid} stroke="#0a1511" strokeWidth="1" strokeLinejoin="round" /></svg>
+            <svg className="lyr" width={s.w} height={s.h} viewBox={`0 0 ${s.w} ${s.h}`} style={css(`left:${s.x}px;top:${s.y}px;transform:translateZ(${s.zTop}px)`)} aria-hidden="true"><path className={s.cls} d={s.d} fill={s.fTop} stroke={s.stroke} strokeWidth={s.sw} strokeLinejoin="round" /></svg>
+          </Fragment>))}
+          {v.tags.map((l, i) => (<div key={i} style={css(`position:absolute;left:${l.x}px;top:${l.y}px;width:0;height:0;transform-style:preserve-3d;transform:translateZ(${l.z}px) rotateX(-48deg);pointer-events:none`)}><div className="tag" style={css(`border:1px solid ${l.border};background:${l.bg}`)}><span style={css(`width:7px;height:7px;border-radius:50%;background:${l.dot}`)} /><span>{l.name}</span></div></div>))}
+          {v.fx.map((w, i) => (<div key={i} style={css(`position:absolute;left:${w.x}px;top:${w.y}px;width:0;height:0;transform-style:preserve-3d;transform:translateZ(${w.z}px) rotateX(-48deg);pointer-events:none`)}><div className={`wx ${w.cls}`} style={{ left: -60, top: -110 }} /></div>))}
+        </div>
+      </div>
+
+      {/* Header */}
+      <header style={{ position: 'absolute', left: 0, top: 0, width: 1440, height: 64, boxSizing: 'border-box', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16, background: 'linear-gradient(#0a1814ee,#0a181400)', zIndex: 5 }}>
+        <div className="row"><div style={{ width: 34, height: 34, borderRadius: 11, background: '#DCE96C', display: 'grid', placeItems: 'center', transform: 'rotate(-6deg)' }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#14382b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 20h10M12 20v-9" /><path d="M12 11c0-3-2-5-5-5 0 3 2 5 5 5z" /><path d="M12 13c0-3 2-5 5-5 0 3-2 5-5 5z" /></svg></div><span className="hd" style={{ fontWeight: 700, fontSize: 18 }}>Farmora</span></div>
+        <nav aria-label="Workspaces" style={{ display: 'flex', gap: 2, marginLeft: 12, padding: 4, borderRadius: 999, background: '#12281f99', border: '1px solid #2c4a3d' }}>{v.nav.map((n, i) => (<Link key={i} href={n.href} style={css(`padding:8px 14px;border-radius:999px;background:${n.bg};color:${n.fg};font-size:13px;font-weight:${n.fw}`)}>{n.name}{n.name === 'Buyers' && <ProBadge />}</Link>))}</nav>
+        <span className="pill" style={{ marginLeft: 'auto', background: '#12281f', border: '1px solid #2c4a3d', color: '#B9CDC0' }}><span className="live" style={{ width: 7, height: 7, borderRadius: '50%', background: '#6FD08C' }} />Deals live · weather sample</span>
+        <button onClick={v.toggleProf} aria-expanded={v.profOpen} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, padding: '0 12px 0 6px', borderRadius: 999, border: '1px solid #2c4a3d', background: '#12281f99', color: '#E8F1EA', fontSize: 13 }}><span style={{ width: 32, height: 32, borderRadius: '50%', background: '#E8BC7C', color: '#4a3420', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 12 }}>CF</span><span style={{ textAlign: 'left' }}><b style={{ display: 'block', fontWeight: 600 }}>Chittoor Farmers FPO</b><span style={{ display: 'block', fontSize: 12, color: '#A9C0B2' }}>Andhra Pradesh</span></span></button>
+      </header>
+      {v.profOpen && (<div className="card" style={{ right: 24, left: 'auto', top: 70, width: 300, padding: 18, zIndex: 6, display: 'flex', flexDirection: 'column', gap: 10, background: '#0f261ef7' }}><div className="row" style={{ gap: 12 }}><span style={{ width: 52, height: 52, borderRadius: '50%', background: '#E8BC7C', color: '#4a3420', display: 'grid', placeItems: 'center', fontWeight: 700 }}>CF</span><div><div className="hd" style={{ fontSize: 18 }}>Chittoor Farmers FPO</div><div className="note">Your FPO profile · sample</div></div></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 8 }}><div className="mini"><span>Members</span><b>42</b></div><div className="mini"><span>Since</span><b>2019</b></div><div className="mini"><span>Trust</span><b>4.6</b></div></div></div>)}
+
+      {/* KPI strip */}
+      <section className="card" aria-label="Revenue year to date" style={{ left: 24, top: 76, width: 380, height: 104, padding: '14px 16px', display: 'flex', gap: 14 }}>
+        <div style={{ flex: 1 }}><div className="kick">Revenue YTD</div><div className="num" style={{ fontSize: 34, lineHeight: 1.1, marginTop: 6 }}>₹38.6 L</div><span className="pill up" style={{ marginTop: 6 }}>▲ +30% vs last month</span></div>
+        <div style={{ width: 168, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 62 }}>{v.bars.map((b, i) => (<div key={i} title={`${b.m}: ₹${b.v} L`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 2, height: '100%' }}><span style={{ fontSize: 9.5, color: '#93AE9F' }}>{b.v}</span><div style={css(`width:100%;height:${b.h}px;border-radius:5px 5px 2px 2px;background:${b.bg}`)} /></div>))}</div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 3 }}>{v.bars.map((b, i) => (<span key={i} style={{ flex: 1, textAlign: 'center', fontSize: 9.5, color: '#86A394' }}>{b.m}</span>))}</div>
+        </div>
+      </section>
+      {v.kpis.map((k, i) => (
+        <section key={i} className="card" style={{ left: 416 + i * 253, top: 76, width: 241, height: 104, padding: '14px 16px' }}>
+          <div className="kick">{k.label}</div>
+          <div className="num" style={{ fontSize: 28, lineHeight: 1.15, marginTop: 6 }}>{k.value}</div>
+          <div className="row" style={{ marginTop: 6, gap: 8 }}>{k.pill ? <span className={`pill ${k.pill.cls}`}>{k.pill.text}</span> : <span className="note" style={{ fontSize: 12 }}>{k.sub}</span>}</div>
+        </section>
+      ))}
+
+      {/* Left: deals and deliveries */}
+      <aside className="card" style={{ left: 24, top: 192, width: 340, height: 684, padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="sec"><span className="hd" style={{ fontSize: 16 }}>Active deals</span><span className="muted" style={{ fontSize: 12 }}>{v.dealsHead}</span></div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{v.deals.map((d, i) => (
+          <Link key={i} href={d.href} style={{ display: 'block', color: '#E8F1EA', padding: '11px 12px', borderRadius: 14, background: '#132e25', border: '1px solid #1f3d33' }}>
+            <div className="sec" style={{ fontSize: 13.5, fontWeight: 600 }}><span>{d.ex}</span><span className="num" style={{ fontSize: 15, letterSpacing: '-.3px' }}>{d.value}</span></div>
+            <div className="muted" style={{ fontSize: 12, margin: '2px 0 9px' }}>{d.crop}</div>
+            <Bar pct={d.prog} color="linear-gradient(90deg,#4fbf72,#DCE96C)" />
+            <div className="sec" style={{ fontSize: 11.5, marginTop: 6 }}><span className="muted">{d.stage} · {d.prog}%</span><span className="muted">Due {d.due}</span></div>
+          </Link>))}</div>
+        <div style={{ height: 1, background: '#23443a', margin: '4px 0' }} />
+        <div className="sec"><span className="hd" style={{ fontSize: 16 }}>Upcoming deliveries</span><span className="muted" style={{ fontSize: 12 }}>{v.delivHead}</span></div>
+        <ol style={{ listStyle: 'none', margin: 0, padding: '0 0 0 14px', borderLeft: '2px solid #23443a', display: 'flex', flexDirection: 'column', gap: 12 }}>{v.deliveries.map((u, i) => (
+          <li key={i} style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: -21, top: 4, width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#DCE96C' : '#0f261e', border: '2px solid #DCE96C' }} />
+            <div className="sec"><b style={{ fontSize: 13, fontWeight: 600 }}>{u.what}</b><span className="pill" style={{ background: '#1d3f31', color: '#DCE96C' }}>{u.days} d</span></div>
+            <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>{u.when}</div>
+          </li>))}</ol>
+        <Link href="/contracts" className="link" style={{ marginTop: 'auto' }}>View all contracts →</Link>
+      </aside>
+
+      {/* Right: state details */}
+      <aside className="card" aria-live="polite" style={{ left: 1076, top: 192, width: 340, height: 474, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div className="sec"><span className="kick">State details</span><span className="pill" style={{ background: '#132e25', color: '#93AE9F' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#DCE96C' }} />{v.stMode}</span></div>
+        <div className="row" style={{ alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}><div className="hd" style={{ fontSize: 24, lineHeight: 1.1 }}>{v.stName}</div><div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{v.stRegion} India · {v.stCode}</div></div>
+          <span className="pill" style={css(`background:${v.wxBg};color:#E8F1EA;padding:5px 11px;font-size:12px`)}>{v.wxLabel} · {v.stTemp}°C</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 8 }}>
+          <div className="mini"><span>Rain vs normal</span><b style={css(`color:${v.stRainColor}`)}>{v.stRain}</b></div>
+          <div className="mini"><span>Humidity</span><b>{v.stHumid}</b></div>
+          <div className="mini"><span>Your deals</span><b style={{ fontSize: 15 }}>{v.stDeals}</b></div>
+        </div>
+        <div style={{ padding: '9px 11px', borderRadius: 12, background: '#132e25', border: '1px solid #1f3d33' }}>
+          <div className="row" style={{ gap: 8 }}><span style={css(`width:10px;height:10px;border-radius:3px;background:${v.stageColor};flex:none`)} /><span style={{ fontSize: 12.5, flex: 1 }}><b style={{ fontWeight: 600 }}>{v.stStage} season</b> · {v.stNote}</span></div>
+          <div className="row" style={{ gap: 5, flexWrap: 'wrap', marginTop: 7 }}><span className="note">Main crops</span>{v.stCrops.map((c, i) => (<span key={i} className="pill" style={{ background: '#1d3f31', border: '1px solid #2f5a48', color: '#E8F1EA', padding: '2px 8px' }}>{c}</span>))}</div>
+        </div>
+        {v.hasRisk && (<div style={{ padding: '10px 12px', borderRadius: 12, background: '#3a1f1c', border: '1px solid #8a3a2e' }}>
+          <div className="sec" style={{ fontSize: 13.5, fontWeight: 700, color: '#FFD3CB' }}><span>{v.riskKind}</span><span style={{ fontSize: 12, fontWeight: 600 }}>{v.riskEta}</span></div>
+          <div className="row" style={{ margin: '6px 0 5px' }}><div style={{ flex: 1 }}><Bar pct={v.riskPct} color={v.riskColor} /></div><b className="num" style={{ fontSize: 15, color: '#FFD3CB' }}>{v.riskPct}%</b></div>
+          <div style={{ fontSize: 12, lineHeight: 1.45, color: '#F2C4BC' }}>{v.riskImpact}</div>
+          <div style={{ fontSize: 12, lineHeight: 1.45, color: '#FFE7A8', marginTop: 5 }}>→ {v.riskAction}</div>
+        </div>)}
+        {v.noRisk && (<div className="row" style={{ padding: '10px 12px', borderRadius: 12, background: '#132e25', border: '1px solid #1f3d33', fontSize: 12.5, color: '#B9CDC0' }}><span style={{ color: '#6FD08C' }}>●</span>No weather risk predicted in the next 3 weeks.</div>)}
+        <div>
+          <div className="kick" style={{ marginBottom: 4 }}>Your exposure</div>
+          {v.exposure.map((e, i) => (<div key={i} className="row" style={{ fontSize: 12.5, lineHeight: 1.45, alignItems: 'flex-start', gap: 8 }}><span style={{ color: '#DCE96C' }}>◆</span><span>{e}</span></div>))}
+          {v.noExposure && (<div className="note" style={{ fontSize: 12.5 }}>No active deals, members or routes in this state.</div>)}
+        </div>
+      </aside>
+
+      {/* Right: ranked weather risks */}
+      <aside className="card" style={{ left: 1076, top: 678, width: 340, height: 198, padding: '12px 10px 10px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div className="sec" style={{ padding: '0 6px 4px' }}><span className="hd" style={{ fontSize: 15 }}>Weather risks</span><span className="muted" style={{ fontSize: 11.5 }}><span style={{ color: '#DCE96C' }}>◆</span> your deals · next 3 weeks</span></div>
+        {v.riskList.map((r, i) => (
+          <button key={i} className="riskrow" onClick={r.pick} style={r.on ? { background: '#143026', borderColor: '#3d6b55' } : undefined}>
+            <span style={css(`width:8px;height:8px;border-radius:50%;background:${r.color};flex:none`)} />
+            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} title={`${r.name} · ${r.kind}`}><b style={{ fontWeight: 600 }}>{r.name}</b> <span className="muted">· {r.kind}</span></span>
+            {r.mine && <span title="Affects your deals" aria-label="Affects your deals" style={{ color: '#DCE96C', fontSize: 11, flex: 'none' }}>◆</span>}
+            <b className="num" style={css(`font-size:13px;color:${r.color};width:34px;text-align:right`)}>{r.pct}%</b>
+            <span className="muted" style={{ fontSize: 11, width: 58, textAlign: 'right', flex: 'none' }}>{r.eta}</span>
+          </button>))}
+      </aside>
+
+      {/* Map legend */}
+      <div style={{ position: 'absolute', left: 386, top: 836, width: 668, boxSizing: 'border-box', padding: '9px 16px', borderRadius: 999, background: '#0f261ed9', border: '1px solid #23443a', display: 'flex', justifyContent: 'center', gap: 16, fontSize: 12, color: '#B9CDC0' }}>
+        {[['Sowing', '#DCE96C'], ['Growing', '#6FD08C'], ['Harvest', '#F5B83D'], ['Fallow', '#7d8d84']].map((l, i) => (<span key={i} className="row" style={{ gap: 6 }}><span style={css(`width:9px;height:9px;border-radius:50%;background:${l[1]}`)} />{l[0]}</span>))}
+        <span className="row" style={{ gap: 6 }}><span style={{ width: 9, height: 9, borderRadius: 3, border: '2px solid #D9604C' }} />Predicted risk</span>
+        <span className="muted">Fill = today’s weather</span>
+      </div>
+    </div>
+  )} />;
 }

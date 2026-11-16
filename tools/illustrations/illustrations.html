@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Farmora slide illustrations</title>
+<!-- Four slide illustrations (Clusters, Compass, Network, Assistant). Open with ?scene=clusters|compass|network|assistant.
+     Rendered to transparent PNGs by render.py. Voxel boxes are CSS 3D faces, same style as the app. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Telugu:wght@600&family=Noto+Sans+Tamil:wght@600&family=Noto+Sans+Kannada:wght@600&family=Noto+Sans+Bengali:wght@600&family=Noto+Sans+Gurmukhi:wght@600&family=Noto+Sans+Gujarati:wght@600&display=block" rel="stylesheet" />
+<style>
+  html, body { margin: 0; background: transparent; }
+  body.preview { background: radial-gradient(1200px 800px at 30% 60%, #4ccd3a 0%, #1f7a20 45%, #050a05 100%); }
+  /* Shared backdrop so every illustration matches: one rounded card, same gradient, border and glow. */
+  body.card #canvas { border-radius: 56px; background: radial-gradient(1100px 760px at 50% 46%, #22513f 0%, #12301f 58%, #0a1814 100%);
+                      box-shadow: inset 0 0 0 2px #2c4a3d, inset 0 0 160px #00000055; }
+  body.card #canvas::after { content: ''; position: absolute; inset: 0; border-radius: 56px; pointer-events: none;
+                      background: radial-gradient(700px 260px at 50% 100%, #DCE96C14, transparent 70%); }
+  #canvas { position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: Inter, system-ui, sans-serif; color: #F4FAF0; }
+  .stage { position: absolute; inset: 0; perspective: 3200px; perspective-origin: 50% 30%; }
+  .world { position: absolute; left: 50%; top: 52%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; transform-style: preserve-3d; }
+  .f { position: absolute; }
+  .bb { position: absolute; width: 0; height: 0; transform-style: preserve-3d; }
+  .tag { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); white-space: nowrap; display: flex; align-items: center; gap: 10px;
+         padding: 10px 18px; border-radius: 999px; background: #0b1f16f0; border: 2px solid #DCE96C; font: 700 24px/1.1 'Space Grotesk', sans-serif; color: #F4FAF0;
+         box-shadow: 0 12px 30px #00000066; }
+  .tag.sm { font-size: 19px; padding: 7px 14px; border-width: 1.5px; }
+  .tag.soft { border-color: #ffffff40; }
+  .tag.red { border-color: #FF8A70; color: #FFE1D8; }
+  .tag.lime { background: #DCE96C; color: #14382b; border-color: #DCE96C; }
+  .tag small { font: 600 16px Inter, sans-serif; color: #B9D3C2; }
+  .tag.lime small { color: #3b5a20; }
+  .pro { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font: 800 15px Inter; letter-spacing: 1px; color: #3a2a06;
+         background: linear-gradient(135deg, #FFE58A, #F5B83D 55%, #E8932F); }
+  svg.ground { position: absolute; left: 0; top: 0; overflow: visible; }
+</style>
+</head>
+<body>
+<div id="canvas"></div>
+<script>
+// ---------- voxel kit (same construction as src/lib/voxel.ts) ----------
+const CROP = { Mango: '#F5B83D', Tomato: '#E4584B', Chilli: '#C95FB0', Banana: '#B6E36B', Rice: '#6CC4F0', Groundnut: '#D49A66', Broiler: '#C9A0DC' };
+const SKIN = ['#D9A47A', '#C98F63', '#8D5A3B', '#E8B98A'], SHIRT = ['#E4A04B', '#4F9BD9', '#E4584B', '#8E7CC3', '#4FB3A9', '#C95FB0'];
+const shade = (hex, m) => { const n = parseInt(hex.slice(1), 16); return '#' + [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.max(0, Math.min(255, Math.round(v * m))).toString(16).padStart(2, '0')).join(''); };
+let FACES = [];
+function box(o) {
+  const z = o.z || 0, bg = (m) => (o.pat ? `linear-gradient(rgba(0,0,0,${(1 - m).toFixed(2)}),rgba(0,0,0,${(1 - m).toFixed(2)})),${o.pat}` : shade(o.c, m));
+  const extra = o.css || '';
+  FACES.push(`left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${o.d}px;background:${bg(1)};transform:translateZ(${z + o.h}px);${extra}`);
+  if (o.h <= 0) return;
+  FACES.push(`left:${o.x}px;top:${o.y + o.d}px;width:${o.w}px;height:${o.h}px;background:${bg(.8)};transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);`);
+  FACES.push(`left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${o.h}px;background:${bg(.62)};transform-origin:0 0;transform:translateZ(${z}px) rotateX(90deg);`);
+  FACES.push(`left:${o.x + o.w}px;top:${o.y}px;width:${o.h}px;height:${o.d}px;background:${bg(.58)};transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);`);
+  FACES.push(`left:${o.x}px;top:${o.y}px;width:${o.h}px;height:${o.d}px;background:${bg(.7)};transform-origin:0 0;transform:translateZ(${z}px) rotateY(-90deg);`);
+}
+const flat = (css) => FACES.push(css);
+const at = (ox, oy, oz, u) => (x, y, z, w, d, h, c, pat) => box({ x: ox + x * u, y: oy + y * u, z: oz + z * u, w: w * u, d: d * u, h: h * u, c, pat });
+
+function face(V, sk) {
+  const skD = shade(sk, .82);
+  V(-4, 6, 36.4, 2, .4, 2.2, '#1a1a1a'); V(2, 6, 36.4, 2, .4, 2.2, '#1a1a1a');
+  V(-3.6, 6.3, 37.8, .7, .2, .7, '#ffffff'); V(2.4, 6.3, 37.8, .7, .2, .7, '#ffffff');
+  V(-4.4, 6, 39.3, 2.8, .3, .6, '#2a1f18'); V(1.6, 6, 39.3, 2.8, .3, .6, '#2a1f18');
+  V(-1, 6, 34.4, 2, 1, 1.8, skD);
+  V(-2.2, 6, 32.6, 4.4, .3, .7, '#5a2e22'); V(-2.8, 6, 33.1, .8, .3, .6, '#5a2e22'); V(2, 6, 33.1, .8, .3, .6, '#5a2e22');
+  V(-5.4, 6, 33.6, 1.8, .2, 1.1, '#E58A7A'); V(3.6, 6, 33.6, 1.8, .2, 1.1, '#E58A7A');
+}
+function farmer(V, id, crop, opts = {}) {
+  const sk = SKIN[id % 4], st = SHIRT[id % 6];
+  const dhoti = ['#EFE8D6', '#E3D6B8', '#5E6E8F'][(id >> 1) % 3], towelC = ['#E4584B', '#4F9BD9', '#F5B83D', '#4FB3A9'][(id >> 2) % 4];
+  const towel = `repeating-linear-gradient(45deg,${towelC} 0 6px,#F4F1E8 6px 9px)`;
+  V(-6, -2, 0, 5, 7, 1.4, '#6b4428'); V(1, -2, 0, 5, 7, 1.4, '#6b4428');
+  V(-5.5, -1.5, 1.4, 4.5, 4.5, 2.6, sk); V(1, -1.5, 1.4, 4.5, 4.5, 2.6, sk);
+  V(-5.8, -1.8, 4, 5, 5, 6, dhoti); V(.8, -1.8, 4, 5, 5, 6, dhoti);
+  V(-7, -3.6, 9, 14, 7.6, 5.5, dhoti);
+  V(-7, -3.5, 14.5, 14, 7, 14.5, st);
+  V(-1.4, 3.5, 25, 2.8, .3, 3.5, sk);
+  V(-7.6, -4.1, 18, 4.2, 8.2, 11.5, towelC, towel); V(-7.3, 3.7, 13, 3.2, .8, 7, towelC, towel);
+  V(-11, -2, 16, 4, 4, 13, st); V(-11, -2, 13, 4, 4, 3, sk);
+  if (opts.wave) { V(7, -2, 29, 4, 4, 11, st); V(7, -2, 40, 4, 4, 3, sk); } else { V(7, -2, 16, 4, 4, 13, st); V(7, -2, 13, 4, 4, 3, sk); }
+  V(-2.5, -2, 29, 5, 4, 2, shade(sk, .82));
+  V(-6, -5, 31, 12, 11, 11, sk);
+  V(-6.3, -5.4, 34, 12.6, 3.6, 7, '#1f1a17');
+  face(V, sk);
+  const hat = id % 3;
+  if (hat === 0) { const straw = 'repeating-linear-gradient(45deg,#E6C67E 0 4px,#D4AE5F 4px 6px)'; V(-11.5, -10.5, 42, 23, 23, 1.2, '#E6C67E', straw); V(-5.5, -5, 43.2, 11, 11, 5.5, '#DDB967', straw); V(-5.7, -5.2, 43.2, 11.4, 11.4, 1.5, '#8B4A2B'); }
+  else if (hat === 1) { const pc = ['#F28C28', '#E4584B', '#F4F1E8', '#E8C547'][(id >> 3) % 4], pg = `repeating-linear-gradient(160deg,${pc} 0 7px,${shade(pc, .85)} 7px 10px)`; V(-6.6, -5.6, 40.5, 13.2, 12.2, 6.5, pc, pg); V(-4, -3, 47, 8, 7, 2, pc, pg); V(-1.5, -6.6, 31, 3, 1, 10, pc, pg); }
+  else { V(-6.2, -3.8, 41.2, 12.4, 9, 4, '#F4F1E8'); V(-6.2, -.3, 45.2, 12.4, 2, 1, '#E3DFD3'); }
+  if (opts.phone) { V(7.4, 2.2, 15, 3, 1, 5, '#1a1a1a'); V(7.8, 3.2, 15.6, 2.2, .2, 3.8, '#25D366'); }
+  if (opts.hoe) { V(8.2, -.8, 2, 1.6, 1.6, 36, '#8B5A2B'); V(7.8, .8, 34, 2.4, 7, 3.5, '#A9B4B7'); }
+  if (crop) { const c = CROP[crop]; V(-19, -4, 9, 8.5, 8, 5, '#B07A3E', 'repeating-linear-gradient(0deg,#B07A3E 0 5px,#8E5E2C 5px 7px)'); V(-18, -3, 14, 3, 3, 3, c); V(-14.5, -3, 14, 3, 3, 3, shade(c, .9)); V(-16.3, .3, 14, 3, 3, 3, shade(c, 1.08)); V(-16.2, -1.4, 17, 3, 3, 3, c); }
+}
+function buyer(V, seed) {
+  const sk = SKIN[(seed + 1) % 4], suit = ['#2E3A55', '#3B3F46', '#4A3B5C', '#24474A'][seed % 4], tie = ['#E4584B', '#DCE96C', '#6CC4F0', '#F2A65A'][(seed >> 1) % 4];
+  V(-6, -2, 0, 5, 7, 1.6, '#1b1b1f'); V(1, -2, 0, 5, 7, 1.6, '#1b1b1f');
+  V(-5.6, -1.6, 1.6, 4.8, 4.8, 13, shade(suit, .85)); V(.8, -1.6, 1.6, 4.8, 4.8, 13, shade(suit, .85));
+  V(-7, -3.5, 14.5, 14, 7, 14.5, suit); V(-2.2, 3.5, 21, 4.4, .3, 8, '#F4F1E8'); V(-.8, 3.7, 19, 1.6, .4, 9.5, tie);
+  V(-11, -2, 16, 4, 4, 13, suit); V(-11, -2, 13, 4, 4, 3, sk); V(7, -2, 16, 4, 4, 13, suit); V(7, -2, 13, 4, 4, 3, sk);
+  V(7.4, 2, 12, 6, .8, 8, '#C9A36B'); V(8, 2.7, 13, 4.8, .2, 6.5, '#F4F1E8');
+  V(-2.5, -2, 29, 5, 4, 2, shade(sk, .82)); V(-6, -5, 31, 12, 11, 11, sk);
+  const hair = ['#1f1a17', '#3a2a1e', '#151515', '#5a4632'][(seed >> 2) % 4];
+  V(-6.3, -5.4, 34, 12.6, 3.6, 8, hair); V(-6.3, -5.4, 41, 12.6, 11.4, 2.2, hair);
+  face(V, sk);
+  if (seed % 2 === 0) { V(-4.6, 6.4, 36, 3.2, .2, 3, '#1a1a1a'); V(1.4, 6.4, 36, 3.2, .2, 3, '#1a1a1a'); V(-1.4, 6.4, 37.4, 2.8, .2, .5, '#1a1a1a'); }
+}
+const crate = (x, y, z, s, crop) => { box({ x, y, z, w: s, d: s, h: s * .62, c: '#B07A3E', pat: 'repeating-linear-gradient(0deg,#B07A3E 0 5px,#8E5E2C 5px 7px)' }); if (crop) box({ x: x + s * .15, y: y + s * .15, z: z + s * .62, w: s * .7, d: s * .7, h: s * .16, c: CROP[crop] }); };
+const disc = (cx, cy, r, z, css) => flat(`left:${cx - r}px;top:${cy - r}px;width:${2 * r}px;height:${2 * r}px;border-radius:50%;transform:translateZ(${z}px);${css}`);
+
+// ---------- scene plumbing ----------
+let TAGS = [], SVG = '';
+const ROT = { x: 58, z: -38 };
+const tag = (x, y, z, html, cls = '') => TAGS.push({ x, y, z, html, cls });
+function mount(rot = ROT, scale = 1, top = '52%', left = '50%') {
+  const c = document.getElementById('canvas');
+  const world = `<div class="world" style="top:${top};left:${left};transform:scale(${scale}) rotateX(${rot.x}deg) rotateZ(${rot.z}deg)">
+    <svg class="ground" width="1000" height="1000" viewBox="0 0 1000 1000" style="transform:translateZ(1px)">${SVG}</svg>
+    ${FACES.map((f) => `<div class="f" style="${f}"></div>`).join('')}
+    ${TAGS.map((t) => `<div class="bb" style="left:${t.x}px;top:${t.y}px;transform:translateZ(${t.z}px) rotateZ(${-rot.z}deg) rotateX(${-rot.x}deg)"><div class="tag ${t.cls}">${t.html}</div></div>`).join('')}
+  </div>`;
+  c.insertAdjacentHTML('beforeend', `<div class="stage">${world}</div>`);
+}
+
+// ---------- 1. Clusters: spare land from many farms adds up to one order ----------
+function clusters() {
+  const plots = [[150, 120, 0], [430, 70, 1], [110, 400, 2], [150, 690, 3], [430, 800, 4]];
+  const target = [740, 470];
+  let paths = '';
+  plots.forEach(([px, py, i]) => {
+    const W = 230, D = 160;
+    box({ x: px, y: py, z: 0, w: W, d: D, h: 12, c: '#5a3b25', pat: 'repeating-linear-gradient(90deg,#6b4a2e 0 12px,#4f3320 12px 18px)' });
+    const rows = 5, exportRows = i === 3 ? 1 : 2;
+    for (let r = 0; r < rows; r++) {
+      const ex = r >= rows - exportRows, y = py + 18 + r * 28;
+      for (let k = 0; k < 6; k++) {
+        const x = px + 18 + k * 36;
+        box({ x: x + 6, y: y + 4, z: 12, w: 6, d: 6, h: ex ? 26 : 18, c: '#3f8f4f' });
+        box({ x: x, y: y - 2, z: ex ? 38 : 30, w: 18, d: 18, h: 5, c: ex ? '#5fd07a' : '#4a9a5a' });
+        if (ex) box({ x: x + 4, y: y + 2, z: 43, w: 10, d: 10, h: 10, c: CROP.Mango });
+      }
+    }
+    // lime outline around the export strip
+    const sy = py + 18 + (rows - exportRows) * 28 - 8;
+    flat(`left:${px + 6}px;top:${sy}px;width:${W - 12}px;height:${exportRows * 28 + 4}px;border:4px solid #DCE96C;border-radius:10px;box-sizing:border-box;transform:translateZ(13px);box-shadow:0 0 30px #DCE96C88`);
+    const fv = at(px + W + 26, py + 50, 0, 1.7); farmer(fv, [3, 8, 13, 4, 10][i]);
+    const ac = ['1.5 of 5 ac', '1.2 of 4 ac', '2 of 6 ac', '0.8 of 3 ac', '1.4 of 4 ac'][i];
+    tag(px + W / 2, py + D / 2, 120, ac, 'sm soft');
+    const sx = px + W, syc = sy + exportRows * 14;
+    paths += `<path d="M${sx} ${syc} Q ${(sx + target[0]) / 2} ${(syc + target[1]) / 2 - 60} ${target[0] - 40} ${target[1]}" fill="none" stroke="#DCE96C" stroke-width="7" stroke-dasharray="18 14" stroke-linecap="round" opacity=".9"/>`;
+    crate((sx + target[0]) / 2 - 14, (syc + target[1]) / 2 - 44, 4, 30, 'Mango');
+  });
+  SVG = paths;
+  // the export order: pallet with a big crate stack
+  disc(target[0] + 60, target[1] + 40, 170, 2, 'background:radial-gradient(circle,#DCE96C40,#DCE96C00 70%)');
+  box({ x: target[0] - 40, y: target[1] - 70, z: 0, w: 200, d: 200, h: 10, c: '#8B5A2B' });
+  for (let l = 0; l < 3; l++) for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) if (l < 2 || (a + b) % 2 === 0) crate(target[0] - 30 + a * 62, target[1] - 60 + b * 62, 10 + l * 40, 58, l === 2 || l === 1 ? 'Mango' : null);
+  tag(target[0] + 60, target[1] + 30, 230, 'Export order <small>30 t mango</small>', 'lime');
+  mount({ x: 56, z: -34 }, 1, '55%', '57%');
+}
+
+// ---------- 2. Compass: pick farmers spread out so one storm can't sink the order ----------
+function compass() {
+  const T = 250, G = 26, ox = 500 - (3 * T + 2 * G) / 2;
+  const storm = 2; // top-right tile
+  const picks = { 0: 1, 1: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 1 };
+  let id = 1;
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+    const k = r * 3 + c, x = ox + c * (T + G), y = ox + r * (T + G), bad = k === storm;
+    box({ x, y, z: 0, w: T, d: T, h: 14, c: bad ? '#2b3a36' : '#2f6a50' });
+    // two farms per district
+    [[22, 30], [130, 140]].forEach(([fx, fy], j) => {
+      box({ x: x + fx, y: y + fy, z: 14, w: 96, d: 76, h: 6, c: '#5a3b25', pat: 'repeating-linear-gradient(90deg,#6b4a2e 0 9px,#4f3320 9px 13px)' });
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 2; b++) {
+        box({ x: x + fx + 14 + a * 28, y: y + fy + 14 + b * 30, z: 20, w: 5, d: 5, h: bad ? 6 : 16, c: bad ? '#6b5a3a' : '#3f8f4f' });
+        box({ x: x + fx + 8 + a * 28, y: y + fy + 8 + b * 30, z: bad ? 26 : 36, w: 16, d: 16, h: 4, c: bad ? '#7a7a4a' : '#5fd07a' });
+      }
+    });
+    const chosen = picks[k];
+    const fxp = x + 190, fyp = y + 70;
+    if (chosen) disc(fxp, fyp + 10, 46, 15, 'border:5px solid #DCE96C;box-sizing:border-box;box-shadow:0 0 40px #DCE96Caa,inset 0 0 20px #DCE96C66');
+    else disc(fxp, fyp + 10, 46, 15, 'border:5px solid #FF8A70;box-sizing:border-box;opacity:.9');
+    farmer(at(fxp, fyp, 15, 1.5), [1, 5, 9, 2, 6, 10, 4, 8, 13][id++ - 1]);
+    tag(fxp, fyp, 110, chosen ? '✓' : '✕', chosen ? 'lime sm' : 'red sm');
+  }
+  // storm cloud over the bad district, sun elsewhere
+  const sx = ox + 2 * (T + G) + T / 2, sy = ox + T / 2;
+  [[-70, -20, 70], [-10, -40, 90], [50, -10, 70], [0, 20, 80]].forEach(([dx, dy, s]) => box({ x: sx + dx - s / 2, y: sy + dy - s / 2, z: 230, w: s, d: s, h: s * .6, c: '#5b6676' }));
+  for (let i = 0; i < 14; i++) box({ x: sx - 80 + (i % 7) * 26, y: sy - 30 + Math.floor(i / 7) * 50, z: 60 + (i % 3) * 30, w: 3, d: 3, h: 120, c: '#8fd0f5', css: 'opacity:.7' });
+  tag(sx, sy, 360, '⛈ Storm risk here', 'red');
+  mount({ x: 56, z: -34 }, .8, '47%', '46%');
+  document.getElementById('canvas').insertAdjacentHTML('beforeend', `<div style="position:absolute;left:50%;bottom:44px;transform:translateX(-50%)"><div class="tag lime" style="position:static;transform:none">8 farmers in 8 districts <small>one storm can’t sink the order</small></div></div>`);
+}
+
+// ---------- 3. Network: FPO hub linked to exporters abroad, sharing harvest outlooks ----------
+function network() {
+  const hub = [500, 500];
+  const countries = [['🇸🇬', 'Singapore'], ['🇦🇪', 'UAE'], ['🇱🇰', 'Sri Lanka'], ['🇲🇾', 'Malaysia'], ['🇲🇻', 'Maldives']];
+  let paths = '';
+  countries.forEach(([flag, name], i) => {
+    const a = -Math.PI / 2 + i / countries.length * Math.PI * 2 + Math.PI / 5, R = 420, x = hub[0] + Math.cos(a) * R, y = hub[1] + Math.sin(a) * R;
+    paths += `<path d="M${hub[0]} ${hub[1]} Q ${(hub[0] + x) / 2 + Math.sin(a) * 70} ${(hub[1] + y) / 2 - Math.cos(a) * 70} ${x} ${y}" fill="none" stroke="#DCE96C" stroke-width="6" stroke-dasharray="16 12" stroke-linecap="round" opacity=".85"/>`;
+    disc(x, y, 86, 2, 'background:radial-gradient(circle,#2f6a50 0%,#1d4a39 65%,#143528 100%);box-shadow:0 0 0 3px #6CC4F066,0 0 50px #6CC4F044');
+    buyer(at(x, y - 6, 2, 1.7), i * 3 + 1);
+    crate(x + 30, y + 20, 2, 34, ['Tomato', 'Mango', 'Chilli', 'Groundnut', 'Rice'][i]);
+    tag(x, y, 150, `${flag} ${name}`, 'sm soft');
+    if (i === 1 || i === 2) {
+      const mx = hub[0] + (x - hub[0]) * .6, my = hub[1] + (y - hub[1]) * .6;
+      tag(mx, my, 105, i === 1 ? '📈 Harvest outlook <small>61% grown · 38.9 t due</small>' : '📈 Harvest outlook <small>on track · 19.4 t due</small>', 'sm');
+    }
+  });
+  SVG = paths;
+  // FPO hub: plinth, warehouse, crates
+  disc(hub[0], hub[1], 150, 2, 'background:radial-gradient(circle,#3f8a5a 0%,#1d4a39 70%);box-shadow:0 0 0 4px #DCE96C88,0 0 90px #DCE96C66');
+  box({ x: hub[0] - 85, y: hub[1] - 70, z: 2, w: 170, d: 120, h: 80, c: '#E8F1EA' });
+  box({ x: hub[0] - 95, y: hub[1] - 80, z: 82, w: 190, d: 140, h: 14, c: '#DCE96C' });
+  box({ x: hub[0] - 70, y: hub[1] - 55, z: 96, w: 140, d: 90, h: 10, c: '#c4d35a' });
+  box({ x: hub[0] - 25, y: hub[1] + 49, z: 2, w: 50, d: 3, h: 55, c: '#2a3a33' });
+  crate(hub[0] + 95, hub[1] + 20, 2, 36, 'Mango'); crate(hub[0] + 95, hub[1] - 25, 2, 36, 'Tomato'); crate(hub[0] + 95, hub[1] + 20, 24, 36, 'Rice');
+  farmer(at(hub[0] - 120, hub[1] + 40, 2, 1.5), 4);
+  tag(hub[0], hub[1], 175, 'Your FPO <span class="pro">★ PRO</span>', 'lime');
+  mount({ x: 56, z: -30 }, .98, '47%');
+  document.getElementById('canvas').insertAdjacentHTML('beforeend', `<div style="position:absolute;left:50%;bottom:40px;transform:translateX(-50%)"><div class="tag sm soft" style="position:static;transform:none">🔒 Harvest outlooks are shared only with farmers’ consent</div></div>`);
+}
+
+// ---------- 4. Assistant: WhatsApp in the farmer's own language ----------
+function assistant() {
+  // farmer in 3D on the left
+  disc(500, 500, 190, 0, 'background:radial-gradient(circle,#3f8a5a 0%,#1d4a39 65%,#143528 100%);box-shadow:0 0 0 4px #25D36688,0 0 80px #25D36655');
+  farmer(at(500, 500, 2, 6.2), 3, 'Mango', { phone: true });
+  const c = document.getElementById('canvas');
+  c.insertAdjacentHTML('beforeend', `<div class="stage" style="width:820px">${''}</div>`);
+  const stage = c.lastElementChild;
+  stage.innerHTML = `<div class="world" style="top:56%;transform:scale(.9) rotateX(60deg) rotateZ(-24deg)">${FACES.map((f) => `<div class="f" style="${f}"></div>`).join('')}</div>`;
+  const hello = [['नमस्ते', 'Noto Sans Devanagari', 90, 120, -8], ['నమస్కారం', 'Noto Sans Telugu', 40, 330, 6], ['வணக்கம்', 'Noto Sans Tamil', 120, 760, -5], ['ನಮಸ್ಕಾರ', 'Noto Sans Kannada', 560, 70, 7], ['নমস্কার', 'Noto Sans Bengali', 600, 820, 4], ['ਸਤ ਸ੍ਰੀ ਅਕਾਲ', 'Noto Sans Gurmukhi', 1330, 150, -6], ['નમસ્તે', 'Noto Sans Gujarati', 1380, 800, 5]];
+  c.insertAdjacentHTML('beforeend', hello.map(([t, f, x, y, r]) => `<div style="position:absolute;left:${x}px;top:${y}px;transform:rotate(${r}deg);white-space:nowrap;padding:12px 22px;border-radius:22px 22px 22px 6px;background:#ffffffee;color:#14382b;font:600 34px '${f}';box-shadow:0 14px 34px #00000055">${t}</div>`).join(''));
+  const wave = Array.from({ length: 34 }, (_, i) => `<i style="display:inline-block;width:4px;margin-right:3px;border-radius:2px;background:#4a7a5a;height:${8 + Math.round(Math.abs(Math.sin(i * 1.7) * 22 + Math.cos(i * .6) * 8))}px"></i>`).join('');
+  c.insertAdjacentHTML('beforeend', `
+  <div style="position:absolute;left:880px;top:60px;width:430px;height:880px;border-radius:56px;background:#101512;padding:14px;box-sizing:border-box;box-shadow:0 40px 90px #00000088,0 0 0 2px #2c3b33">
+    <div style="position:relative;width:100%;height:100%;border-radius:44px;overflow:hidden;background:#ECE5DD url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22><circle cx=%222%22 cy=%222%22 r=%221.4%22 fill=%22%23d9cfc3%22/></svg>');font-family:'Noto Sans Devanagari',Inter,sans-serif">
+      <div style="position:absolute;left:50%;top:10px;width:120px;height:30px;margin-left:-60px;border-radius:20px;background:#101512;z-index:2"></div>
+      <div style="background:#075E54;color:#fff;padding:52px 18px 14px;display:flex;align-items:center;gap:12px">
+        <span style="width:46px;height:46px;border-radius:50%;background:#DCE96C;display:grid;place-items:center;font-size:24px">🌱</span>
+        <span><b style="display:block;font:700 20px 'Noto Sans Devanagari',Inter">किसान साथी</b><span style="font:500 14px Inter;opacity:.85">Farmora · online</span></span>
+      </div>
+      <div style="padding:16px 14px;display:flex;flex-direction:column;gap:12px;font-size:19px;line-height:1.35;color:#111b21">
+        <div style="align-self:flex-start;max-width:86%;background:#fff;padding:10px 14px;border-radius:4px 16px 16px 16px;box-shadow:0 1px 1px #0002">🙏 नमस्ते रमेश जी! मैं <b>किसान साथी</b>, आपके FPO से।<div style="font:italic 14px Inter;color:#667781;margin-top:3px">Namaste! I’m Kisan Saathi, from your FPO</div></div>
+        <div style="align-self:flex-start;max-width:86%;background:#fff;padding:10px 14px;border-radius:4px 16px 16px 16px;box-shadow:0 1px 1px #0002">आप कैसे बात करना चाहेंगे?<div style="font:italic 14px Inter;color:#667781;margin-top:3px">How would you like to talk?</div></div>
+        <div style="display:flex;gap:8px"><span style="flex:1;text-align:center;background:#fff;color:#027eb5;font-weight:600;padding:10px;border-radius:12px;box-shadow:0 1px 1px #0002">💬 मैसेज</span><span style="flex:1;text-align:center;background:#fff;color:#027eb5;font-weight:600;padding:10px;border-radius:12px;box-shadow:0 1px 1px #0002">📞 फ़ोन कॉल</span></div>
+        <div style="align-self:flex-end;max-width:86%;background:#D9FDD3;padding:10px 14px;border-radius:16px 4px 16px 16px;box-shadow:0 1px 1px #0002">
+          <div style="display:flex;align-items:center;gap:10px"><span style="width:34px;height:34px;border-radius:50%;background:#25D366;color:#fff;display:grid;place-items:center;font-size:16px">▶</span><span style="display:flex;align-items:center">${wave}</span></div>
+          <div style="font-size:16px;margin-top:6px">“५ एकड़ है, बोरवेल से सिंचाई”</div><div style="font:italic 14px Inter;color:#667781">voice note, transcribed: “5 acres, borewell irrigation”</div></div>
+        <div style="align-self:flex-start;max-width:86%;background:#fff;padding:10px 14px;border-radius:4px 16px 16px 16px;box-shadow:0 1px 1px #0002">✅ आपकी प्रोफ़ाइल तैयार है! अब नए ऑर्डर यहीं मिलेंगे।<div style="font:italic 14px Inter;color:#667781;margin-top:3px">Your profile is ready. New orders will arrive here.</div></div>
+      </div>
+      <div style="position:absolute;left:12px;right:12px;bottom:14px;display:flex;gap:8px;align-items:center">
+        <span style="flex:1;background:#fff;border-radius:24px;padding:12px 16px;font:500 16px Inter;color:#8696a0">Message</span>
+        <span style="width:48px;height:48px;border-radius:50%;background:#25D366;display:grid;place-items:center;color:#fff;font-size:22px">🎙</span>
+      </div>
+    </div>
+  </div>`);
+}
+
+const scene = new URLSearchParams(location.search).get('scene') || 'clusters';
+const BG = new URLSearchParams(location.search).get('bg');
+if (BG === 'green') document.body.classList.add('preview');
+if (BG === 'card') document.body.classList.add('card');
+({ clusters, compass, network, assistant })[scene]();
+window.ready = document.fonts.ready.then(() => true);
+</script>
+</body>
+</html>

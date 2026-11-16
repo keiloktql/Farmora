@@ -1,0 +1,7 @@
+{
+  "tier": "Farmora Pro",
+  "renewsOn": "2027-06-30",
+  "crops": ["Mango", "Tomato", "Chilli", "Groundnut"],
+  "addOnPricePerCropINR": 4999,
+  "note": "Sample plan. Each crop pack unlocks every exporter in the network who buys that crop."
+}

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local data written by the prototype backend (contracts store)
+/.data/
+/tools/sample-data/.cache/

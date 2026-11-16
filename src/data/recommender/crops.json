@@ -1,0 +1,37 @@
+[
+ {
+  "name": "Mango",
+  "yieldTPerAcre": 3,
+  "gradeShare": 0.8
+ },
+ {
+  "name": "Tomato",
+  "yieldTPerAcre": 8,
+  "gradeShare": 0.8
+ },
+ {
+  "name": "Chilli",
+  "yieldTPerAcre": 1.2,
+  "gradeShare": 0.8
+ },
+ {
+  "name": "Banana",
+  "yieldTPerAcre": 12,
+  "gradeShare": 0.8
+ },
+ {
+  "name": "Rice",
+  "yieldTPerAcre": 2.5,
+  "gradeShare": 0.8
+ },
+ {
+  "name": "Groundnut",
+  "yieldTPerAcre": 0.9,
+  "gradeShare": 0.8
+ },
+ {
+  "name": "Broiler",
+  "yieldTPerAcre": 1,
+  "gradeShare": 0.8
+ }
+]

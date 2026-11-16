@@ -1,0 +1,8 @@
+[
+  { "exporter": "LionCity Fresh Imports", "produce": "Tomato", "qtyT": 18, "country": "Singapore", "pricePerKg": 23.9, "sowBy": "2026-11-20", "deliverBy": "2027-03-20", "status": "Growing", "progress": 62, "stageNote": "Plots growing" },
+  { "exporter": "Spice Route Exporters", "produce": "Chilli", "qtyT": 12, "country": "Sri Lanka", "pricePerKg": 95, "sowBy": "2026-12-05", "deliverBy": "2027-04-05", "status": "Matching farmers", "progress": 35, "stageNote": "Farmers being matched" },
+  { "exporter": "Coastal Retail Co.", "produce": "Groundnut", "qtyT": 20, "country": "Malaysia", "pricePerKg": 60, "sowBy": null, "deliverBy": "2027-02-28", "status": "Harvest", "progress": 80, "stageNote": "Harvest in progress" },
+  { "exporter": "Coastal Grain Traders", "produce": "Rice", "qtyT": 40, "country": "Maldives", "pricePerKg": 35, "sowBy": null, "deliverBy": "2027-01-15", "status": "Harvest", "progress": 70, "stageNote": "Harvest in progress" },
+  { "exporter": "Gulf Fruit Link", "produce": "Mango", "qtyT": 30, "country": "UAE", "pricePerKg": 70, "sowBy": null, "deliverBy": "2027-04-20", "status": "Growing", "progress": 25, "stageNote": "Orchards flowering" },
+  { "exporter": "Island Foods", "produce": "Broiler", "qtyT": 8, "country": "Maldives", "pricePerKg": 120, "sowBy": null, "deliverBy": "2027-03-12", "status": "Growing", "progress": 45, "stageNote": "Flocks on feed" }
+]
