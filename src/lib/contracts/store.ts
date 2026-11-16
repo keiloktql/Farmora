@@ -1,9 +1,9 @@
-// Contracts store. For the prototype it keeps contracts in .data/contracts.json (git-ignored), seeded from
-// src/data/contracts/seed.json on first use. Swap these functions for database calls later; the API routes
-// and pages only use the exported functions below.
+// Contracts are persisted as rows in InsForge so writes survive serverless deployments.
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import "server-only";
+import { createAdminClient } from "@insforge/sdk";
+import { randomUUID } from "node:crypto";
+import { connection } from "next/server";
 import seed from "@/data/contracts/seed.json";
 import { loadRecommenderData } from "@/lib/recommender/data";
 import { recommend } from "@/lib/recommender/model";
@@ -11,9 +11,17 @@ import { daysUntil, dealRisk } from "./risk";
 import { standardsFor } from "./standards";
 import type { Allocation, Contract, ContractStatus, NewContract } from "./types";
 
-const FILE = path.join(process.cwd(), ".data", "contracts.json");
-let cache: Contract[] | null = null;
 let queue: Promise<unknown> = Promise.resolve();
+const RECORDS_TABLE = "farmora_contract_records";
+
+function database() {
+  const baseUrl = process.env.INSFORGE_URL;
+  const apiKey = process.env.INSFORGE_API_KEY;
+  if (!baseUrl || !apiKey) {
+    throw new Error("Contract storage is not configured. Set INSFORGE_URL and INSFORGE_API_KEY.");
+  }
+  return createAdminClient({ baseUrl, apiKey }).database;
+}
 
 /** Serialise writes so two requests can't overwrite each other's changes. */
 function exclusive<T>(fn: () => Promise<T>): Promise<T> {
@@ -23,14 +31,16 @@ function exclusive<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 async function persist(list: Contract[]) {
-  await mkdir(path.dirname(FILE), { recursive: true });
-  await writeFile(FILE, JSON.stringify(list, null, 1));
-  cache = list;
+  if (!list.length) return;
+  const { error } = await database().from(RECORDS_TABLE).upsert(
+    list.map((contract) => ({ id: contract.id, payload: contract, updated_at: new Date().toISOString() })),
+    { onConflict: "id" },
+  );
+  if (error) throw error;
 }
 
-function newId(list: Contract[]): string {
-  const n = list.reduce((m, c) => Math.max(m, Number(c.id.replace(/\D/g, "")) || 0), 1000) + 1;
-  return `CT-${n}`;
+function newId(): string {
+  return `CT-${randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 /** Acres each farmer has already given to contracts other than `exceptId`. */
@@ -62,22 +72,28 @@ export function runRecommender(c: Contract, list: Contract[], extraPlanted = 0) 
 }
 
 async function load(): Promise<Contract[]> {
-  if (cache) return cache;
-  try {
-    cache = JSON.parse(await readFile(FILE, "utf8")) as Contract[];
-    return cache;
-  } catch {
-    // First run: seed the deals the app already showed, then allocate farmers to those already under way
-    // (earliest delivery first, so land accounting is consistent).
-    const now = new Date().toISOString();
-    const list: Contract[] = (seed as (NewContract & { status: ContractStatus; progress: number; stageNote?: string })[])
-      .map((s, i) => ({ ...s, id: `CT-${1001 + i}`, allocation: null, source: "seed" as const, createdAt: now }));
-    for (const c of [...list].sort((a, b) => a.deliverBy.localeCompare(b.deliverBy))) {
-      if (c.status !== "Matching farmers" && c.status !== "Draft") c.allocation = runRecommender(c, list).allocation;
-    }
-    await persist(list);
-    return list;
+  await connection();
+  const db = database();
+  const { data, error } = await db
+    .from(RECORDS_TABLE)
+    .select("payload")
+    .order("id", { ascending: true })
+    .limit(2000);
+  if (error) throw error;
+
+  const stored = (data ?? []).map((row) => row.payload as Contract);
+  if (stored.length) return stored;
+
+  // First run: seed the deals the app already showed, then allocate farmers to
+  // those already under way (earliest delivery first, so land accounting is consistent).
+  const now = new Date().toISOString();
+  const list: Contract[] = (seed as (NewContract & { status: ContractStatus; progress: number; stageNote?: string })[])
+    .map((s, i) => ({ ...s, id: `CT-${1001 + i}`, allocation: null, source: "seed" as const, createdAt: now }));
+  for (const c of [...list].sort((a, b) => a.deliverBy.localeCompare(b.deliverBy))) {
+    if (c.status !== "Matching farmers" && c.status !== "Draft") c.allocation = runRecommender(c, list).allocation;
   }
+  await persist(list);
+  return list;
 }
 
 export function withDetails(c: Contract) {
@@ -114,7 +130,7 @@ export function createContracts(inputs: NewContract[]) {
       const c: Contract = {
         exporter: input.exporter, produce: input.produce, qtyT: input.qtyT, country: input.country, pricePerKg: input.pricePerKg ?? null,
         sowBy: input.sowBy ?? null, deliverBy: input.deliverBy, constraints: input.constraints, stageNote: input.stageNote ?? "Ready for farmer matching",
-        id: newId(list), status: input.status ?? "Draft", progress: 5, allocation: null, source: input.source ?? "manual", createdAt: new Date().toISOString(),
+        id: newId(), status: input.status ?? "Draft", progress: 5, allocation: null, source: input.source ?? "manual", createdAt: new Date().toISOString(),
       };
       list.push(c);
       created.push(c);

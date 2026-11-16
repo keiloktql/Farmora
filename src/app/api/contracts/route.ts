@@ -39,5 +39,25 @@ export async function POST(request: Request) {
     };
   });
   if (errors.length) return Response.json({ error: errors.join("; ") }, { status: 400 });
-  return Response.json({ created: await createContracts(inputs) }, { status: 201 });
+  try {
+    return Response.json({ created: await createContracts(inputs) }, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/contracts failed:", error);
+
+    const code = (error as { code?: string })?.code;
+    const storageUnavailable =
+      code === "EROFS" ||
+      code === "EACCES" ||
+      code === "ENOSPC" ||
+      (error instanceof Error && error.message.includes("storage is not configured"));
+
+    return Response.json(
+      {
+        error: storageUnavailable
+          ? "Contract storage is unavailable. Please try again later."
+          : "Unable to save contracts. Please try again or contact support if the problem continues.",
+      },
+      { status: storageUnavailable ? 503 : 500 },
+    );
+  }
 }

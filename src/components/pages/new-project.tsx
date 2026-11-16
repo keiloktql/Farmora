@@ -55,8 +55,15 @@ class Logic extends DCLogic {
   };
   async post(url, body) {
     const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Request failed');
+    const responseText = await res.text();
+    let data = null;
+    try {
+      data = responseText ? JSON.parse(responseText) : null;
+    } catch {
+      // Framework and hosting errors are sometimes returned as HTML or an empty body.
+    }
+    if (!res.ok) throw new Error(data?.error || `Request failed (${res.status}). Please try again.`);
+    if (!data) throw new Error(`The server returned an empty response (${res.status}). Please try again.`);
     return data;
   }
   async loadExample() {

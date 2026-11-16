@@ -18,7 +18,8 @@ An FPO workspace for landing deals with exporters, finding the right farmers for
 ## Data
 
 - Farmers (`src/data/recommender/farmers.json`) are synthetic; climate history (`climate.json`) is real: Government APY yield records and NASA POWER weather. Rebuild with `tools/sample-data/build_sample_data.py`.
-- Contracts, buy-side decisions and progress reports are stored in `.data/` (git-ignored), seeded from `src/data/`.
+- Contracts are persisted in the private InsForge `farmora_contract_records` table and seeded from `src/data/contracts/seed.json` on first use. The server needs `INSFORGE_URL` and `INSFORGE_API_KEY` environment variables; keep the admin key server-only and never prefix it with `NEXT_PUBLIC_`.
+- Buy-side decisions and progress reports are stored in `.data/` (git-ignored), seeded from `src/data/`.
 - Exporters (`src/data/buyers/exporters.json`) and the Pro plan (`plan.json`) are fictional sample data.
 - Farmer progress reports are seeded samples; real ones go to `POST /api/progress/reports`.
 
