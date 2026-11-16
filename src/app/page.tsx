@@ -1,5 +1,8 @@
-import CachedHarvestLink from "./cached-harvestlink";
+import type { Metadata } from "next";
+import OverviewPage from "@/components/pages/overview";
 
-export default function HomePage() {
-  return <CachedHarvestLink initialView="overview" />;
+export const metadata: Metadata = { title: "Overview" };
+
+export default function Page() {
+  return <OverviewPage />;
 }

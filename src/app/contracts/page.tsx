@@ -1,5 +1,8 @@
-import CropPlanningApp from "@/components/crop-planning-app";
+import type { Metadata } from "next";
+import ContractsPage from "@/components/pages/contracts";
 
-export default function ContractsPage() {
-  return <CropPlanningApp initialView="demand" />;
+export const metadata: Metadata = { title: "Contracts" };
+
+export default function Page() {
+  return <ContractsPage />;
 }

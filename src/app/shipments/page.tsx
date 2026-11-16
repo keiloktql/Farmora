@@ -1,5 +1,8 @@
-import CropPlanningApp from "@/components/crop-planning-app";
+import type { Metadata } from "next";
+import ShipmentsPage from "@/components/pages/shipments";
 
-export default function ShipmentsPage() {
-  return <CropPlanningApp initialView="shipments" />;
+export const metadata: Metadata = { title: "Shipment tracking" };
+
+export default function Page() {
+  return <ShipmentsPage />;
 }

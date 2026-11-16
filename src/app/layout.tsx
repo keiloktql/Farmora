@@ -1,37 +1,31 @@
 import type { Metadata } from "next";
-import { DM_Sans, Fira_Code, Plus_Jakarta_Sans } from "next/font/google";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space",
   subsets: ["latin"],
-});
-
-const firaCode = Fira_Code({
-  variable: "--font-fira-code",
-  subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "HarvestLink Crop Planning",
-  description: "FPO crop planning, farmer opt-in, and buyer-led quality guidance.",
+  title: {
+    default: "HarvestLink",
+    template: "%s · HarvestLink",
+  },
+  description: "FPO deal, crop and supply-chain workspace: contracts, farmers, allocation, buyers and shipments.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${plusJakarta.variable} ${dmSans.variable} ${firaCode.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
-      </body>
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
